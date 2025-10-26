@@ -1,6 +1,9 @@
 [tools]
 pre-commit = "latest"
 
+[env]
+PROJECT_NAME = "{{ config_root | basename }}"
+
 [hooks]
 enter = [
 'echo ""',
