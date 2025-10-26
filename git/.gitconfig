@@ -1,0 +1,16 @@
+[core]
+	editor = nano
+	autocrlf = input
+	excludesfile = ~/.gitignore
+[include]
+    path = .gitconfig.local
+[url "ssh://git@github.com/"]
+  insteadOf = https://github.com/
+[init]
+  defaultBranch = "main"
+[http]
+	sslVerify = false
+[https]
+	sslVerify = false
+[init]
+	defaultBranch = main

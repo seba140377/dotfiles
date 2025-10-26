@@ -1,0 +1,23 @@
+[tools]
+age = "latest"
+atuin = "latest"
+bat = "latest"
+claude = "latest"
+eza = "latest"
+fzf = "latest"
+gum = "latest"
+jq = "latest"
+node = "lts"
+pnpm = "latest"
+sops = "latest"
+starship = "latest"
+yq = "latest"
+zellij = "latest"
+zoxide = "latest"
+
+[settings]
+experimental = true
+
+[env]
+SOPS_AGE_RECIPIENTS = "age1595c6n7r3zu0aql8qeehlulds6g4cvavmphsyauk9uddks5hpuzqcg7c4u"
+SOPS_AGE_KEY_FILE = "{{env.HOME}}/.config/mise/age.txt"

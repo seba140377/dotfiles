@@ -1,0 +1,41 @@
+brews:
+  - name: zsh
+  - name: wget
+  - name: stow
+  - name: git
+  - name: thefuck
+  - name: neofetch
+  - name: dos2unix
+  - name: figlet
+  - name: orbstack
+    cask: true
+custom:
+  - runbook
+mise:
+  - sops
+  - age
+  - starship
+  - gum
+  - bat
+  - zoxide
+  - fzf
+  - eza
+  - jq
+  - zellij
+  - atuin
+  - zoxide
+  - node@lts
+  - pnpm
+  - claude
+npm:
+  - oclif
+  - "@fission-ai/openspec@latest"
+stows:
+  - atuin
+  - zsh
+  - git
+  - mise
+  - starship
+  - zellij
+  - neofetch
+  - claude

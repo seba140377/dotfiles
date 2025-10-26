@@ -1,0 +1,5 @@
+alias fzfn='nano $(fzf --preview="bat --color=always {}")'
+alias fzfv='vim $(fzf --preview="bat --color=always {}")'
+alias fzfc='code $(fzf --preview="bat --color=always {}")'
+alias fzfz='zed $(fzf --preview="bat --color=always {}")'
+alias fzfp='echo $PATH | tr ":" "\n" | awk "{ lines[NR] = \$0 } END { for (i = NR; i > 0; i--) print lines[i] }" | fzf'

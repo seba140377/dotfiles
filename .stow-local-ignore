@@ -1,0 +1,10 @@
+/.git
+/.gitignore
+/.pre-commit-config.yaml
+/config.yml
+/CLAUDE.md
+/mise.toml
+/README.md
+/setup.sh
+/teardown.sh
+/welcome-banner.sh
