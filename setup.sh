@@ -188,14 +188,14 @@ if [ "$1" = "--dotfiles" ]; then
   exit 0
 fi
 
-# prepare
-# ask_for_user_details
-# install_brew_packages
+prepare
+ask_for_user_details
+install_brew_packages
 install_custom_tools
-# install_mise_tools
-# install_global_npm_packages
-# stow_dotfiles
-# create_user_specific_files
+install_mise_tools
+install_global_npm_packages
+stow_dotfiles
+create_user_specific_files
 
 readme=$(cat <<EOF
 # Finished setup!
