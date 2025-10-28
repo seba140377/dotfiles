@@ -14,3 +14,5 @@
 	sslVerify = false
 [init]
 	defaultBranch = main
+[mu-repo]
+	remote-base-url = ssh://git@github.com:abes140377

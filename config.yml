@@ -11,6 +11,7 @@ brews:
     cask: true
 custom:
   - runbook
+  - bash-commons
 mise:
   - sops
   - age
