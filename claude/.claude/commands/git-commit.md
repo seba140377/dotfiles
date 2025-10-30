@@ -1,5 +1,5 @@
 ---
-allowed-tools: Bash(git add:*), Bash(git status:*), Bash(git diff:*), Bash(git commit:*)
+allowed-tools: Bash(git add:*), Bash(git status:*), Bash(git diff:*)
 argument-hint: [type] [message]
 description: Create a smart conventional git commit
 model: claude-sonnet-4-5-20250929
@@ -61,4 +61,5 @@ Never mention Claude Code in the commit message.
 2. Identify the commit type
 3. Stage appropriate files
 4. Create descriptive commit message
+5. Ask for confirmation
 5. Commit the changes
