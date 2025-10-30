@@ -12,6 +12,7 @@ brews:
 custom:
   - runbook
   - bash-commons
+  - pocketbase
 mise:
   - sops
   - age

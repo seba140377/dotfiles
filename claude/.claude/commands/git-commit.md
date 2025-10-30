@@ -54,6 +54,7 @@ If arguments provided: Use $1 as type and $2 as message.
 Otherwise: Analyze changes and suggest appropriate commit.
 
 Never mention Claude Code in the commit message.
+Do not add a line like: Co-Authored-By: Claude <noreply@anthropic.com>"
 
 ## Steps
 
