@@ -13,6 +13,7 @@ custom:
   - runbook
   - bash-commons
   - pocketbase
+  - mu-repo
 mise:
   - sops
   - age
@@ -41,3 +42,4 @@ stows:
   - zellij
   - neofetch
   - claude
+  - notes
