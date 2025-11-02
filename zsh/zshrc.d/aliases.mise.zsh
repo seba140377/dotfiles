@@ -1,0 +1,7 @@
+alias m='mise $@'
+alias mr='mise --raw $@'
+alias mr='mise --raw $@'
+alias mrr='mise --raw run $@'
+alias mt='mise tasks'
+alias ml='mise list'
+alias me='mise env'
