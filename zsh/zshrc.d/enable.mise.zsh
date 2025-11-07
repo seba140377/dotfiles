@@ -1,3 +1,3 @@
 if [[ -x ~/.local/bin/mise ]]; then
-  eval "$(~/.local/bin/mise activate zsh)"
+  ~/.local/bin/mise completion zsh > ~/.local/share/zinit/completions/_mise
 fi

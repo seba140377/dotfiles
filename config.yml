@@ -14,7 +14,9 @@ custom:
   - bash-commons
   - pocketbase
   - mu-repo
+  - mani
 mise:
+  - usage
   - sops
   - age
   - starship

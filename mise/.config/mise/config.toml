@@ -15,6 +15,7 @@ starship = "latest"
 yq = "latest"
 zellij = "latest"
 zoxide = "latest"
+usage = "latest"
 
 [settings]
 experimental = true
