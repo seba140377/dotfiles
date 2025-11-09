@@ -1,2 +1,6 @@
-alias ls='eza --long --all --no-permissions --no-filesize --no-user --no-time --git'
-alias lst='eza --long --all --no-permissions --no-filesize --no-user --git --sort modified'
+alias ls='eza'
+alias l='eza -lbF --git'
+alias ll='eza -lbGF --git'
+alias llm='eza -lbGd --git --sort=modified'
+alias la='eza -lbhHigUmuSa --time-style=long-iso --git --color-scale'
+alias lx='eza -lbhHigUmuSa@ --time-style=long-iso --git --color-scale'

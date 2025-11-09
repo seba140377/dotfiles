@@ -4,7 +4,9 @@ brews:
   - name: stow
   - name: git
   - name: thefuck
-  - name: neofetch
+  # neofetch is deprecated
+  # `brew doctor` says: You should find replacements for this formulae
+  # - name: neofetch
   - name: dos2unix
   - name: figlet
   - name: orbstack
@@ -13,7 +15,8 @@ custom:
   - runbook
   - bash-commons
   - pocketbase
-  - mu-repo
+  # Use mani
+  # - mu-repo
   - mani
 mise:
   - usage

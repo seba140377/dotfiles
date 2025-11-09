@@ -15,7 +15,8 @@ function verbose_echo() {
 autoload -Uz compinit
 compinit
 
-export PATH="~/.local/bin:$PATH"
+# DO NOT USE ~ in PATH, use $HOME instead
+export PATH="$HOME/.local/bin:$PATH"
 
 # Brew
 eval $(/opt/homebrew/bin/brew shellenv)
@@ -142,7 +143,8 @@ if (( ${#files[@]} > 0 )); then
 else
   verbose_echo "   x No zsh alias scripts available."
 fi
-# === [END] ZSHRC.D AND ALIASES ===
+
+# # === [END] ZSHRC.D AND ALIASES ===
 
 # if BANNER is set to true, show the welcome banner
 if [[ $BANNER == "true" ]]; then

@@ -198,14 +198,9 @@ stow_dotfiles
 create_user_specific_files
 
 readme=$(cat <<EOF
-# Finished setup!
-
-## Please complete the following tasks to finalise the setup:
-
-- Apply the changes to your ~/.zshrc
-
-> Note: If you encounter any issues, please contact the author.
+# ✅ Setup completed successfully!
 EOF
 )
 
-echo "$readme" | gum format
+echo "$readme" | gum format -t markdown
+echo ""
