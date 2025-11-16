@@ -17,6 +17,8 @@ zellij = "latest"
 zoxide = "latest"
 usage = "latest"
 restic = "latest"
+gitleaks = "latest"
+pre-commit = "latest"
 
 [settings]
 experimental = true

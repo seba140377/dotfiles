@@ -31,6 +31,8 @@ mise:
   - pnpm
   - claude
   - restic
+  - gitleaks
+  - pre-commit
 npm:
   - oclif
   - "@fission-ai/openspec@latest"
