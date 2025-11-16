@@ -16,6 +16,7 @@ yq = "latest"
 zellij = "latest"
 zoxide = "latest"
 usage = "latest"
+restic = "latest"
 
 [settings]
 experimental = true
