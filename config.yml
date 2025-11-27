@@ -6,6 +6,7 @@ brews:
   - name: thefuck
   - name: dos2unix
   - name: figlet
+  - name: bfg
   - name: orbstack
     cask: true
 custom:
