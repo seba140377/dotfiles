@@ -1,20 +1,29 @@
 function gac() {
-	if [ -z "$1" ]; then
-	  echo "❗Missing commit message"
-		echo "  Usage: gac \"<commit message>\""
-		return 1
-	fi
 	git add .
-	git commit -m "$1"
+
+	if [ -z "$1" ]; then
+		nano /tmp/commit_msg.txt
+		if [ -s /tmp/commit_msg.txt ]; then
+			git commit -F /tmp/commit_msg.txt
+			rm /tmp/commit_msg.txt
+		fi
+	else
+		git commit -m "$1"
+	fi
 }
 
 function gacp() {
-	if [ -z "$1" ]; then
-	  echo "❗Missing commit message"
-		echo "  Usage: gacp \"<commit message>\""
-		return 1
-	fi
 	git add .
-	git commit -m "$1"
+
+	if [ -z "$1" ]; then
+	    nano /tmp/commit_msg.txt
+		if [ -s /tmp/commit_msg.txt ]; then
+			git commit -F /tmp/commit_msg.txt
+			rm /tmp/commit_msg.txt
+		fi
+	else
+		git commit -m "$1"
+	fi
+
 	git push
 }
