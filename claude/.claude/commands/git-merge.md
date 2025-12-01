@@ -1,109 +1,178 @@
-# Git Merge Command
+---
+allowed-tools: bash_tool
+argument-hint: [source] [target]
+description: Merge git branches with optional push
+model: claude-sonnet-4-5-20250929
+---
 
-This command merges the current branch into the main branch.
+## Your Task
 
-```claude
-<claude_code>
-<description>
-Merges the current branch into the main branch with confirmation prompts
-</description>
+Merge a source branch into a target branch with safety checks and optional push.
 
-<execute>
-#!/bin/bash
-set -e
+**If arguments provided:**
+- First argument: source branch (branch to merge FROM)
+- Second argument: target branch (branch to merge INTO)
 
-# Get current branch
-CURRENT_BRANCH=$(git branch --show-current)
+**If no arguments provided:**
+- Detect current branch as source
+- Use `main` as default target branch
+- If `main` doesn't exist, try `master` as fallback
 
-# Check if we're already on main
-if [ "$CURRENT_BRANCH" = "main" ]; then
-    echo "❌ You are already on the main branch."
-    echo "Please switch to the branch you want to merge."
-    exit 1
-fi
+## Workflow
 
-# Ask user whether to merge directly or review first
-echo "🔀 Branch '$CURRENT_BRANCH' → 'main'"
-echo ""
-echo "Would you like to:"
-echo "1) Perform the merge directly"
-echo "2) Review the changes first (--no-commit --no-ff)"
-echo ""
-read -p "Your choice (1/2): " CHOICE
+1. **Preparation**:
+   - Run `git status` to check for uncommitted changes
+   - **If uncommitted changes exist**:
+     - Inform user: "Du hast uncommittete Änderungen. Ich erstelle zuerst einen Commit."
+     - Execute `/git-commit` slash command to commit changes
+     - Wait for commit completion before proceeding
+   - Run `git fetch` to update remote references
+   - Show current branch with `git branch --show-current`
 
-case $CHOICE in
-    1)
-        MERGE_MODE="direct"
-        MERGE_OPTS=""
-        echo ""
-        echo "📋 Merge mode: Direct merge"
-        ;;
-    2)
-        MERGE_MODE="review"
-        MERGE_OPTS="--no-commit --no-ff"
-        echo ""
-        echo "📋 Merge mode: With review (you can review changes before committing)"
-        ;;
-    *)
-        echo "❌ Invalid selection. Aborting."
-        exit 1
-        ;;
-esac
+2. **Branch Analysis**:
+   - If source not provided: Use current branch
+   - If target not provided: Use `main` (or `master` if `main` doesn't exist)
+   - Verify both branches exist with `git branch -a`
+   - Show last commits on both branches with `git log`
 
-# Confirmation before merge
-echo ""
-echo "⚠️  CONFIRMATION REQUIRED"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Branch '$CURRENT_BRANCH' will be merged into 'main'"
-if [ "$MERGE_MODE" = "review" ]; then
-    echo "Merge options: --no-commit --no-ff"
-    echo "(You can review changes before committing)"
-fi
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo ""
-read -p "Perform merge now? (y/n): " CONFIRM
+3. **Checkout Target**:
+   - Execute `git checkout <target>`
+   - Confirm successful checkout
+   - Run `git pull` to ensure target is up-to-date
 
-if [ "$CONFIRM" != "y" ] && [ "$CONFIRM" != "Y" ]; then
-    echo "❌ Merge aborted."
-    exit 0
-fi
+4. **Merge Execution**:
+   - Execute `git merge <source>`
+   - Handle merge conflicts if they occur
+   - If conflicts: Show conflicted files and stop with instructions
+   - If successful: Show merge summary
 
-# Switch to main branch
-echo ""
-echo "🔄 Switching to main branch..."
-git checkout main
-
-# Perform merge
-echo "🔀 Performing merge..."
-if [ "$MERGE_MODE" = "direct" ]; then
-    git merge "$CURRENT_BRANCH"
-    echo ""
-    echo "✅ Merge completed successfully!"
-    echo "Branch '$CURRENT_BRANCH' has been merged into 'main'."
-
-    # Ask if branch should be deleted
-    echo ""
-    read -p "❓ Would you like to delete the branch '$CURRENT_BRANCH' now? (y/n): " DELETE_BRANCH
-
-    if [ "$DELETE_BRANCH" = "y" ] || [ "$DELETE_BRANCH" = "Y" ]; then
-        git branch -d "$CURRENT_BRANCH"
-        echo "🗑️  Branch '$CURRENT_BRANCH' has been deleted."
-    else
-        echo "ℹ️  Branch '$CURRENT_BRANCH' has been kept."
-    fi
-else
-    git merge $MERGE_OPTS "$CURRENT_BRANCH"
-    echo ""
-    echo "✅ Merge prepared!"
-    echo ""
-    echo "📝 Changes have been merged but not yet committed."
-    echo "You can now:"
-    echo "  - Review the changes: git status, git diff --cached"
-    echo "  - Complete the merge: git commit"
-    echo "  - Abort the merge: git merge --abort"
-    echo ""
-    echo "ℹ️  Note: The option to delete the branch will appear after the commit."
-fi
-</execute>
-</claude_code>
+5. **Push Confirmation**:
+   - After successful merge, ask:
 ```
+     Merge erfolgreich! Möchtest du die Änderungen auf '<target>' jetzt pushen? (ja/nein)
+```
+   - Wait for user response
+   - If yes/ja: Execute `git push` and show result
+   - If no/nein: Acknowledge and finish
+
+## Handling Uncommitted Changes
+
+**Detection**:
+- Run `git status --porcelain` to detect changes
+- Check for both staged and unstaged changes
+
+**Action**:
+1. If changes detected:
+```
+   ⚠️ Uncommittete Änderungen gefunden:
+   <list changes>
+
+   Ich erstelle jetzt einen Commit mit /git-commit...
+```
+2. Call `/git-commit` slash command
+3. Wait for successful commit completion
+4. Continue with merge workflow
+
+**Important**: Do NOT proceed with merge until changes are committed. The `/git-commit` command will handle:
+- Staging files with `git add .`
+- Analyzing changes
+- Creating appropriate commit message
+- Executing the commit
+
+## Default Target Branch Logic
+
+1. Check if `main` branch exists (local or remote)
+2. If `main` exists: Use `main` as target
+3. If `main` doesn't exist: Check for `master`
+4. If `master` exists: Use `master` as target
+5. If neither exists: Ask user to specify target branch
+
+Always inform user which target branch is being used:
+```
+Merge '<source>' in '<target>' (Standard-Branch)
+```
+
+## Safety Checks
+
+- **Before checkout**: Check for uncommitted changes and auto-commit if needed
+- **Before merge**: Ensure branches exist
+- **During merge**: Detect conflicts immediately
+- **After merge**: Verify merge commit was created
+
+## Conflict Handling
+
+If merge conflicts occur:
+1. List all conflicted files with `git status`
+2. Show conflict markers in files
+3. Provide clear instructions:
+```
+   Merge-Konflikt erkannt! Bitte löse folgende Konflikte:
+
+   Konfliktdateien:
+   - <list files>
+
+   Schritte:
+   1. Öffne die Dateien und löse die Konflikte
+   2. Führe 'git add <file>' für jede gelöste Datei aus
+   3. Führe 'git commit' aus um den Merge abzuschließen
+   4. Optional: Führe 'git push' aus
+```
+4. Do NOT attempt to auto-resolve conflicts
+5. Stop and wait for user to resolve manually
+
+## Examples
+```bash
+# Merge current branch into main (with auto-commit if needed)
+claude /gitmerge
+
+# Merge feature branch into main (with auto-commit if needed)
+claude /gitmerge feature/user-auth
+
+# Merge feature branch into develop (explicit target)
+claude /gitmerge feature/user-auth develop
+
+# Merge develop into main (explicit source and target)
+claude /gitmerge develop main
+```
+
+## Workflow Example with Uncommitted Changes
+```
+User: claude /gitmerge
+
+Claude:
+1. ✓ Status prüfen
+2. ⚠️ Uncommittete Änderungen gefunden:
+   M  src/auth.py
+   ?? src/test.py
+3. 📝 Erstelle Commit mit /git-commit...
+   → Analyzing changes...
+   → Proposed: "feat(auth): add login validation"
+   → Commit created!
+4. ✓ Fetch remote changes
+5. ✓ Checkout main
+6. ✓ Pull main
+7. ✓ Merge feature/auth into main
+8. ✅ Merge erfolgreich!
+9. ❓ Möchtest du die Änderungen auf 'main' jetzt pushen? (ja/nein)
+```
+
+## Important
+
+- Always fetch before analyzing branches
+- Never force-push after merge
+- Preserve merge commit history (no squash unless explicitly requested)
+- Show clear status messages at each step
+- Handle both local and remote branches
+- Never mention Claude Code in commit messages
+- Always inform user about default target branch being used
+- **Auto-commit uncommitted changes using `/git-commit` before proceeding**
+
+## Error Messages
+
+Provide helpful German error messages:
+- "Fehler: Branch '<name>' existiert nicht"
+- "Warnung: Du hast uncommittete Änderungen - erstelle Commit..."
+- "Fehler: Merge-Konflikt - manuelle Auflösung erforderlich"
+- "Fehler: Remote-Branch ist weiter voraus - bitte erst pullen"
+- "Fehler: Weder 'main' noch 'master' Branch gefunden - bitte Target-Branch angeben"
+- "Fehler: Commit fehlgeschlagen - Merge abgebrochen"
