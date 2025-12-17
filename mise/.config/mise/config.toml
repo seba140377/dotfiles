@@ -19,6 +19,11 @@ usage = "latest"
 restic = "latest"
 gitleaks = "latest"
 pre-commit = "latest"
+kubectl = "latest"
+helm = "latest"
+kustomize = "latest"
+k9s = "latest"
+flux2 = "latest"
 
 [settings]
 experimental = true
