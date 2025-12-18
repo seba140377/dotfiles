@@ -9,6 +9,7 @@ brews:
   - name: bfg
   - name: orbstack
     cask: true
+  - name: controlplaneio-fluxcd/tap/flux-operator-mcp
 custom:
   - runbook
   - bash-commons
