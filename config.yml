@@ -10,31 +10,40 @@ brews:
   - name: orbstack
     cask: true
   - name: controlplaneio-fluxcd/tap/flux-operator-mcp
+  - name: controlplaneio-fluxcd/tap/flux-operator
+  - name: gnupg
 custom:
   - runbook
   - bash-commons
   - pocketbase
   - mani
 mise:
-  - usage
-  - sops
   - age
-  - starship
-  - gum
-  - bat
-  - zoxide
-  - fzf
-  - eza
-  - jq
-  - zellij
   - atuin
-  - zoxide
+  - bat
+  - eza
+  - fzf
+  - gum
+  - jq
+  - python@3.12
   - node@lts
   - pnpm
-  - claude
+  - sops
+  - starship
+  - yq
+  - zellij
+  - zoxide
+  - usage
   - restic
   - gitleaks
   - pre-commit
+  - kubectl@1.34.3
+  - helm@4.0.4
+  - kustomize@5.8.0
+  - flux2@2.7.5
+  - kubeconform@0.7.0
+  - k9s
+  - github-cli
 npm:
   - oclif
   - "@fission-ai/openspec@latest"
