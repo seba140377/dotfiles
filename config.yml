@@ -12,6 +12,8 @@ brews:
   - name: controlplaneio-fluxcd/tap/flux-operator-mcp
   - name: controlplaneio-fluxcd/tap/flux-operator
   - name: gnupg
+  - name: watch
+  - name: cloud-provider-kind
 custom:
   - runbook
   - bash-commons
@@ -38,6 +40,8 @@ mise:
   - gitleaks
   - pre-commit
   - kubectl@1.34.3
+  - kubectx
+  - kubens
   - helm@4.0.4
   - kustomize@5.8.0
   - flux2@2.7.5
