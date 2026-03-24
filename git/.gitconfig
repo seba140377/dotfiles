@@ -8,10 +8,6 @@
   insteadOf = https://github.com/
 [init]
   defaultBranch = "main"
-[http]
-	sslVerify = false
-[https]
-	sslVerify = false
 [init]
 	defaultBranch = main
 [mu-repo]

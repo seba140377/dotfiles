@@ -1,3 +1,14 @@
 *.iml
 .idea/
 .DS_Store
+
+# Sensitive files - never commit
+.env
+.env.*
+*.key
+*.pem
+*.p12
+age.txt
+*secret*
+*credentials*
+.gitconfig.local
