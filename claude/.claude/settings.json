@@ -4,5 +4,8 @@
     "command": "~/.claude/statusline.sh",
     "padding": 0
   },
-  "alwaysThinkingEnabled": true
+  "language": "German",
+  "alwaysThinkingEnabled": true,
+  "voiceEnabled": true,
+  "skipDangerousModePermissionPrompt": true
 }

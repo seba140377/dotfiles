@@ -5,7 +5,7 @@
 [include]
     path = .gitconfig.local
 [url "ssh://git@github.com/"]
-  insteadOf = https://github.com/
+    insteadOf = https://github.com/
 [init]
 	defaultBranch = main
 [mu-repo]

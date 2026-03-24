@@ -14,7 +14,7 @@ starship = "latest"
 yq = "latest"
 zellij = "latest"
 zoxide = "latest"
-usage = "latest"
+usage = "2.11"
 restic = "latest"
 gitleaks = "latest"
 pre-commit = "latest"
@@ -27,6 +27,7 @@ flux2 = "2.7.5"
 kubeconform = "0.7.0"
 k9s = "latest"
 github-cli = "latest"
+glab = { version = "latest", exe = "glab" }
 
 [settings]
 experimental = true

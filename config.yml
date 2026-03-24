@@ -35,7 +35,7 @@ mise:
   - yq
   - zellij
   - zoxide
-  - usage
+  - usage@2.11
   - restic
   - gitleaks
   - pre-commit
@@ -48,6 +48,7 @@ mise:
   - kubeconform@0.7.0
   - k9s
   - github-cli
+  - glab
 npm:
   - oclif
   - "@fission-ai/openspec@latest"
