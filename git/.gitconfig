@@ -7,8 +7,6 @@
 [url "ssh://git@github.com/"]
   insteadOf = https://github.com/
 [init]
-  defaultBranch = "main"
-[init]
 	defaultBranch = main
 [mu-repo]
 	remote-base-url = ssh://git@github.com:abes140377
