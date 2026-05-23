@@ -6,6 +6,10 @@ STATUSLINE_VERSION="1.3.2"
 
 input=$(cat)
 
+# Check jq availability once
+HAS_JQ=0
+command -v jq >/dev/null 2>&1 && HAS_JQ=1
+
 # ---- color helpers (force colors for Claude Code) ----
 use_color=1
 [ -n "$NO_COLOR" ] && use_color=0

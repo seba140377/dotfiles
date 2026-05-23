@@ -6,6 +6,21 @@
   },
   "language": "German",
   "alwaysThinkingEnabled": true,
+  "skipDangerousModePermissionPrompt": true,
   "voiceEnabled": true,
-  "skipDangerousModePermissionPrompt": true
+  "verbose": true,
+  "autoCompactEnabled": false,
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "afplay /System/Library/Sounds/Glass.aiff; say 'Claude wartet auf deine Eingabe'; osascript -e 'display notification \"Claude Code ist fertig und wartet auf deine Eingabe.\" with title \"Claude Code\"'",
+            "async": true
+          }
+        ]
+      }
+    ]
+  }
 }
