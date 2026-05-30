@@ -19,6 +19,7 @@ custom:
   - bash-commons
   - pocketbase
   - mani
+  - teller
 mise:
   - age
   - atuin

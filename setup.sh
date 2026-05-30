@@ -188,6 +188,15 @@ if [ "$1" = "--dotfiles" ]; then
   exit 0
 fi
 
+# Check for --custom flag
+if [ "$1" = "--custom" ]; then
+  prepare
+  install_custom_tools
+  echo ""
+  echo "✅ Custom tools installed successfully!"
+  exit 0
+fi
+
 prepare
 ask_for_user_details
 install_brew_packages
