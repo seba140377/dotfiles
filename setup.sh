@@ -197,6 +197,15 @@ if [ "$1" = "--custom" ]; then
   exit 0
 fi
 
+# Check for --mise flag
+if [ "$1" = "--mise" ]; then
+  prepare
+  install_mise_tools
+  echo ""
+  echo "✅ Mise tools installed successfully!"
+  exit 0
+fi
+
 prepare
 ask_for_user_details
 install_brew_packages

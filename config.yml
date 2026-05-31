@@ -50,6 +50,7 @@ mise:
   - k9s
   - github-cli
   - glab
+  - vault
 npm:
   - oclif
   - "@fission-ai/openspec@latest"
