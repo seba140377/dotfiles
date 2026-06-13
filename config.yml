@@ -19,7 +19,7 @@ custom:
   - bash-commons
   - pocketbase
   - mani
-  - teller
+  - vault-mcp-server
 mise:
   - age
   - atuin
