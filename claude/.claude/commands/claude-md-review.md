@@ -6,15 +6,15 @@ Analysiere das aktuelle Repository und aktualisiere die CLAUDE.md Datei, damit s
 
 1. **Repository-Analyse durchführen:**
    - Untersuche die aktuelle Projektstruktur mit LS und Glob
-   - Analysiere Taskfile.yml für verfügbare Commands wenn vorhanden
-   - Analysiere mise.toml für verfügbare Commands wenn vorhanden
+   - Analysiere mise.toml für verfügbare tools, tasks, umgebungsvariablen und konfigurationen
+   - Ermittle mise file tasks im '.mise/tasks' Verzeichnis
    - Prüfe package.json, go.mod oder andere Dependency-Dateien
    - Schaue dir README.md und andere Dokumentation an
 
 2. **CLAUDE.md aktualisieren:**
    - Vergleiche die aktuelle CLAUDE.md mit dem Repository-Status
    - Aktualisiere veraltete Befehle und Pfade
-   - Ergänze neue Module, Scripts oder Funktionalitäten
+   - Ergänze neue Module, Scripts, mise Tasks oder Funktionalitäten
    - Korrigiere falsche oder veraltete Informationen
 
 3. **Validierung:**
