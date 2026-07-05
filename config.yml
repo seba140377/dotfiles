@@ -14,6 +14,7 @@ brews:
   - name: gnupg
   - name: watch
   - name: cloud-provider-kind
+  - name: gnu-tar
 custom:
   - runbook
   - bash-commons
@@ -36,17 +37,17 @@ mise:
   - yq
   - zellij
   - zoxide
-  - usage@2.11
+  - usage@3.5.3
   - restic
   - gitleaks
   - pre-commit
-  - kubectl@1.34.3
+  - kubectl@1.36.1
   - kubectx
   - kubens
-  - helm@4.0.4
-  - kustomize@5.8.0
-  - flux2@2.7.5
-  - kubeconform@0.7.0
+  - helm@4.2.2
+  - kustomize@5.8.1
+  - flux2@2.9
+  - kubeconform@0.8.0
   - k9s
   - github-cli
   - glab

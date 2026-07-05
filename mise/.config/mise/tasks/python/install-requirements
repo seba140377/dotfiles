@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+#MISE description="Install Python packages from a requirements file"
+
+set -e
+
+cd "$MISE_ORIGINAL_CWD"
+
+uv pip install -r requirements.txt

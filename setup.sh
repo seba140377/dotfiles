@@ -160,7 +160,7 @@ stow_dotfiles() {
 
   for stow in $STOWS; do
     echo "   Stowing: $stow ..."
-    stow "$stow"
+    stow "$stow" --adopt
   done
 }
 
@@ -203,6 +203,15 @@ if [ "$1" = "--mise" ]; then
   install_mise_tools
   echo ""
   echo "✅ Mise tools installed successfully!"
+  exit 0
+fi
+
+# Check for --npm flag
+if [ "$1" = "--npm" ]; then
+  prepare
+  install_global_npm_packages
+  echo ""
+  echo "✅ Global npm packages installed successfully!"
   exit 0
 fi
 

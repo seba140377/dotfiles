@@ -1,15 +1,4 @@
 {
-  "statusLine": {
-    "type": "command",
-    "command": "~/.claude/statusline.sh",
-    "padding": 0
-  },
-  "language": "German",
-  "alwaysThinkingEnabled": true,
-  "skipDangerousModePermissionPrompt": true,
-  "voiceEnabled": true,
-  "verbose": true,
-  "autoCompactEnabled": false,
   "hooks": {
     "Stop": [
       {
@@ -22,5 +11,31 @@
         ]
       }
     ]
-  }
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "~/.claude/statusline.sh",
+    "padding": 0
+  },
+  "extraKnownMarketplaces": {
+    "antonbabenko": {
+      "source": {
+        "source": "github",
+        "repo": "antonbabenko/agent-plugins"
+      }
+    },
+    "addy-agent-skills": {
+      "source": {
+        "source": "github",
+        "repo": "addyosmani/agent-skills"
+      }
+    }
+  },
+  "language": "German",
+  "alwaysThinkingEnabled": true,
+  "tui": "fullscreen",
+  "skipDangerousModePermissionPrompt": true,
+  "verbose": true,
+  "autoCompactEnabled": false,
+  "voiceEnabled": true
 }

@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+#MISE description="Install pre-commit hooks for code quality and consistency"
+
+set -e
+
+cd "$MISE_ORIGINAL_CWD"
+
+pre-commit install -f --hook-type pre-commit
