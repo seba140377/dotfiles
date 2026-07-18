@@ -16,9 +16,7 @@ brews:
   - name: cloud-provider-kind
   - name: gnu-tar
 custom:
-  - runbook
   - bash-commons
-  - pocketbase
   - mani
   - vault-mcp-server
 mise:
