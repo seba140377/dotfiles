@@ -35,17 +35,17 @@ mise:
   - yq
   - zellij
   - zoxide
-  - usage@3.5.3
+  - usage@3.5
   - restic
   - gitleaks
   - pre-commit
-  - kubectl@1.36.1
+  - kubectl@1.36
   - kubectx
   - kubens
-  - helm@4.2.2
-  - kustomize@5.8.1
+  - helm@4.2
+  - kustomize@5.8
   - flux2@2.9
-  - kubeconform@0.8.0
+  - kubeconform@0.8
   - k9s
   - github-cli
   - glab
