@@ -13,7 +13,6 @@ brews:
   - name: controlplaneio-fluxcd/tap/flux-operator
   - name: gnupg
   - name: watch
-  - name: cloud-provider-kind
   - name: gnu-tar
 custom:
   - bash-commons
@@ -53,6 +52,8 @@ mise:
 npm:
   - oclif
   - "@fission-ai/openspec@latest"
+pip:
+  - "headroom-ai[all]"
 stows:
   - atuin
   - zsh

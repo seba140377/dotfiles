@@ -146,6 +146,24 @@ install_global_npm_packages() {
   done
 }
 
+# Installs global pip packages as specified in config.yml
+# - Reads the list of pip packages from the config file
+# - Iterates through each package and installs it using 'pip install'
+# - All output is suppressed for cleaner terminal display
+install_global_pip_packages() {
+  # Read pip packages from config.yml
+  PIP_PACKAGES=$(yq -r '.pip[]' "$CONFIG_FILE" | tr '\n' ' ')
+
+  echo ""
+  echo "🔸 Installing global pip packages..."
+
+  for pkg in $PIP_PACKAGES; do
+    echo "   Installing: $pkg ..."
+
+    pip install "$pkg" > /dev/null 2>&1
+  done
+}
+
 # Installs development tools and language runtimes globally using mise
 # - Reads the list of mise packages from the config file
 # - Iterates through each package (e.g., node, python, ruby)
@@ -215,12 +233,22 @@ if [ "$1" = "--npm" ]; then
   exit 0
 fi
 
+# Check for --pip flag
+if [ "$1" = "--pip" ]; then
+  prepare
+  install_global_pip_packages
+  echo ""
+  echo "✅ Global pip packages installed successfully!"
+  exit 0
+fi
+
 prepare
 ask_for_user_details
 install_brew_packages
 install_custom_tools
 install_mise_tools
 install_global_npm_packages
+install_global_pip_packages
 stow_dotfiles
 create_user_specific_files
 
