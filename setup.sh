@@ -90,18 +90,17 @@ install_brew_packages() {
   done
 }
 
-# Installs Homebrew packages (formulas and casks) as specified in config.yml
-# - Reads the list of brew packages from the config file
-# - Iterates through each package and checks if it's a cask or formula
-# - Installs casks using 'brew install --cask' for GUI applications
-# - Installs formulas using 'brew install' for CLI tools and libraries
-# - All output is suppressed for cleaner terminal display
+# Installs custom tools using installation scripts from ~/dotfiles/custom/
+# - Reads the list of custom packages from the config file
+# - For each custom package, executes its corresponding install script
+# - Install scripts are expected to be located at ~/dotfiles/custom/install_<package>.sh
+# - This allows for flexible installation of tools that require custom setup beyond brew
 install_custom_tools() {
   # Read custom packages from config.yml
   CUSTOM_PACKAGES=$(yq -r '.custom[]' "$CONFIG_FILE" | tr '\n' ' ')
 
   echo ""
-  echo "🔸 Installing brew formulas and casks..."
+  echo "🔸 Installing custom tools..."
 
   for pkg in $CUSTOM_PACKAGES; do
     echo ""
@@ -203,6 +202,15 @@ if [ "$1" = "--dotfiles" ]; then
   stow_dotfiles
   echo ""
   echo "✅ Dotfiles stowed successfully!"
+  exit 0
+fi
+
+# Check for --brew  flag
+if [ "$1" = "--brew" ]; then
+  prepare
+  install_brew_packages
+  echo ""
+  echo "✅ Brew packages installed successfully!"
   exit 0
 fi
 

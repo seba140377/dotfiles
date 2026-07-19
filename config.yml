@@ -9,6 +9,8 @@ brews:
   - name: bfg
   - name: orbstack
     cask: true
+  - name: headlamp
+    cask: true
   - name: controlplaneio-fluxcd/tap/flux-operator-mcp
   - name: controlplaneio-fluxcd/tap/flux-operator
   - name: gnupg
