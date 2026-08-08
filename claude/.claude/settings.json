@@ -1,4 +1,8 @@
 {
+  "permissions": {
+    "defaultMode": "auto"
+  },
+  "model": "sonnet[1m]",
   "hooks": {
     "Stop": [
       {
@@ -17,6 +21,11 @@
     "command": "~/.claude/statusline.sh",
     "padding": 0
   },
+  "enabledPlugins": {
+    "agent-skills@addy-agent-skills": false,
+    "mattpocock-skills@claude-plugins-official": true,
+    "sflabio-skills@sflabio": true
+  },
   "extraKnownMarketplaces": {
     "antonbabenko": {
       "source": {
@@ -29,11 +38,17 @@
         "source": "github",
         "repo": "addyosmani/agent-skills"
       }
+    },
+    "sflabio": {
+      "source": {
+        "source": "github",
+        "repo": "sflab-io/skills"
+      }
     }
   },
   "language": "German",
   "alwaysThinkingEnabled": true,
-  "tui": "fullscreen",
+  "tui": "default",
   "skipDangerousModePermissionPrompt": true,
   "verbose": true,
   "autoCompactEnabled": false,

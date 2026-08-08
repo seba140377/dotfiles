@@ -15,6 +15,7 @@ All package installations and stow operations are defined in `config.yml`:
 - `custom`: Custom tools requiring specialized installation scripts (located in `custom/install_<name>.sh`)
 - `mise`: Development tools managed by mise (also duplicated in `mise/.config/mise/config.toml`)
 - `npm`: Global npm packages to install
+- `pip`: Global pip packages to install
 - `stows`: Directories to symlink using GNU Stow
 
 ### Directory Structure Pattern
@@ -49,40 +50,13 @@ There are two mise configuration files:
 
 Note: The global config may have slightly different pinned versions than `config.yml` (e.g. `eza` is pinned to `0.23.4` in `mise/.config/mise/config.toml` due to a missing aarch64-apple-darwin build, but unpinned in `config.yml`). Both files should be kept in sync when adding tools.
 
-## Installed Tools & Packages
+### Global mise Tasks
 
-### Homebrew Packages
-- **Shell**: zsh
-- **Utilities**: wget, stow, git, dos2unix, figlet, bfg, gnupg, watch, gnu-tar
-- **Tools**: thefuck, cloud-provider-kind
-- **GitOps**: flux-operator, flux-operator-mcp (from controlplaneio-fluxcd tap)
-- **Containers**: orbstack (cask)
-
-### mise-managed Tools
-- **Shell Enhancement**: starship, atuin, zoxide, fzf, zellij
-- **File Utilities**: bat, eza
-- **CLI Tools**: gum, jq, yq, usage@3.5
-- **Security**: sops, age, gitleaks, vault
-- **Backup**: restic
-- **Development**: node@lts, pnpm, python@3.12, pre-commit
-- **Kubernetes**: kubectl@1.36, kubectx, kubens, helm@4.2, kustomize@5.8, flux2@2.9, kubeconform@0.8, k9s
-- **Git/CI**: github-cli, glab
-
-### npm Global Packages
-- `oclif`: CLI framework
-- `@fission-ai/openspec@latest`: OpenAPI specification tool
-
-### pip Global Packages
-- `headroom-ai[all]`: Context compression tool
-
-### Custom Installation Scripts
-Located in `custom/install_*.sh`:
-- **bash-commons**: Common bash utilities library
-- **mani**: Multi-repository management tool
-- **vault-mcp-server**: HashiCorp Vault MCP server
-
-### Stow Packages
-Currently configured stow packages: `atuin`, `zsh`, `git`, `mise`, `starship`, `zellij`, `neofetch`, `claude`, `notes`
+Task scripts in `mise/.config/mise/tasks/` are stowed to `~/.config/mise/tasks/` and become available as `mise run <task>` in any project once mise is activated:
+- `pre-commit:install`: Installs pre-commit hooks in the current project
+- `python:install-requirements`: Installs Python packages from `requirements.txt` via `uv pip install`
+- `secrets:show <file>`: Shows the decrypted contents of a SOPS-encrypted secrets file (default: `.creds.env.yaml`)
+- `secrets:edit <file>`: Opens a SOPS-encrypted secrets file for editing with SOPS (default: `.creds.env.yaml`)
 
 ## Common Commands
 
@@ -95,6 +69,7 @@ Installs Homebrew, mise, all packages from config.yml, sets up user details, and
 ### Partial Setup Flags
 ```bash
 ./setup.sh --dotfiles  # Only symlink dotfiles (stow), no package installation
+./setup.sh --brew      # Only install Homebrew formulas and casks
 ./setup.sh --custom    # Only run custom/install_*.sh scripts
 ./setup.sh --mise      # Only install mise-managed tools
 ./setup.sh --npm       # Only install global npm packages
@@ -108,65 +83,7 @@ Useful for testing configuration changes or re-running a single install step wit
 ```
 **Note**: Currently disabled. The script needs to be manually uncommented before use. Would unstow all dotfiles and remove installed configurations.
 
-### Working with Stow
-```bash
-# Stow a single package
-stow <package-name>
-
-# Unstow a single package
-stow -D <package-name>
-
-# Restow (useful after modifying files)
-stow -R <package-name>
-```
-
-### Managing mise Tools
-```bash
-# Install all tools from config
-mise install
-
-# Add a new global tool
-mise use -g <tool-name>
-
-# List installed tools
-mise list
-```
-
-## Making Changes
-
-### Adding a New Package Manager Tool
-
-1. Add to `config.yml` under the appropriate section (`brews`, `mise`, `npm`, `pip`)
-2. If using mise, also add to `mise/.config/mise/config.toml`
-3. Test with `./setup.sh`
-
-### Adding a New npm Global Package
-
-1. Add to `config.yml` under `npm` section
-2. Run `./setup.sh` or install manually with `npm install -g <package>`
-
-### Adding a New pip Global Package
-
-1. Add to `config.yml` under `pip` section
-2. Run `./setup.sh --pip` or install manually with `pip install <package>`
-
-### Adding a New Stow Package
-
-1. Create directory structure: `<name>/<path-from-home>/file`
-2. Add `<name>` to `stows` array in `config.yml`
-3. Test with: `stow <name>`
-
-### Adding Custom Installation Scripts
-
-1. Create `custom/install_<name>.sh` script
-2. Add `<name>` to `custom` array in `config.yml`
-3. Script should be idempotent (check if already installed)
-
-### Modifying ZSH Configuration
-
-- Edit files in `zsh/zshrc.d/` following naming conventions
-- Use `stow -R zsh` to update symlinks
-- Source new configuration: `source ~/.zshrc`
+For adding new packages, tools, or stow directories, see the `dotfiles-add-package` skill.
 
 ## Important Files
 

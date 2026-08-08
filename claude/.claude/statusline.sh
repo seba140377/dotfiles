@@ -133,7 +133,7 @@ fi
 context_pct=""
 context_color() { if [ "$use_color" -eq 1 ]; then printf '\033[1;37m'; fi; }  # default white
 
-# Determine max context based on model
+# Determine max context based on model (fallback path only — see below)
 get_max_context() {
   local model_name="$1"
   case "$model_name" in
@@ -155,7 +155,16 @@ get_max_context() {
   esac
 }
 
-if [ -n "$session_id" ] && [ "$HAS_JQ" -eq 1 ]; then
+# Preferred path: Claude Code itself computes context_window.remaining_percentage
+# using the real context window for the active model (e.g. 1M for "sonnet[1m]"),
+# so use that directly instead of re-deriving it from a hardcoded 200K assumption
+# (which went negative for 1M-context models once usage passed 200K tokens).
+if [ "$HAS_JQ" -eq 1 ]; then
+  context_remaining_pct=$(echo "$input" | jq -r '.context_window.remaining_percentage // empty' 2>/dev/null | awk '{printf "%.0f", $1}')
+fi
+
+# Fallback for older Claude Code versions without context_window in the input
+if [ -z "$context_remaining_pct" ] && [ -n "$session_id" ] && [ "$HAS_JQ" -eq 1 ]; then
   MAX_CONTEXT=$(get_max_context "$model_name")
 
   # Convert current dir to session file path
@@ -169,19 +178,25 @@ if [ -n "$session_id" ] && [ "$HAS_JQ" -eq 1 ]; then
     if [ -n "$latest_tokens" ] && [ "$latest_tokens" -gt 0 ]; then
       context_used_pct=$(( latest_tokens * 100 / MAX_CONTEXT ))
       context_remaining_pct=$(( 100 - context_used_pct ))
-
-      # Set color based on remaining percentage
-      if [ "$context_remaining_pct" -le 20 ]; then
-        context_color() { if [ "$use_color" -eq 1 ]; then printf '\033[38;5;203m'; fi; }  # coral red
-      elif [ "$context_remaining_pct" -le 40 ]; then
-        context_color() { if [ "$use_color" -eq 1 ]; then printf '\033[38;5;215m'; fi; }  # peach
-      else
-        context_color() { if [ "$use_color" -eq 1 ]; then printf '\033[38;5;158m'; fi; }  # mint green
-      fi
-
-      context_pct="${context_remaining_pct}%"
     fi
   fi
+fi
+
+if [ -n "$context_remaining_pct" ]; then
+  # Clamp to [0, 100] as a display safety net
+  (( context_remaining_pct < 0 )) && context_remaining_pct=0
+  (( context_remaining_pct > 100 )) && context_remaining_pct=100
+
+  # Set color based on remaining percentage
+  if [ "$context_remaining_pct" -le 20 ]; then
+    context_color() { if [ "$use_color" -eq 1 ]; then printf '\033[38;5;203m'; fi; }  # coral red
+  elif [ "$context_remaining_pct" -le 40 ]; then
+    context_color() { if [ "$use_color" -eq 1 ]; then printf '\033[38;5;215m'; fi; }  # peach
+  else
+    context_color() { if [ "$use_color" -eq 1 ]; then printf '\033[38;5;158m'; fi; }  # mint green
+  fi
+
+  context_pct="${context_remaining_pct}%"
 fi
 
 # ---- usage colors ----
