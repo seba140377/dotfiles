@@ -2,6 +2,11 @@
 
 clear
 
+zshrc="${ZDOTDIR:-$HOME}/.zshrc"
+zprofile="${ZDOTDIR:-$HOME}/.zprofile"
+mkdir -p "$(dirname "$zshrc")"
+mkdir -p "$(dirname "$zprofile")"
+
 # installl brew
 if ! command -v brew &> /dev/null; then
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
@@ -9,12 +14,18 @@ else
   echo "Homebrew already installed. Skipping installation."
 fi
 
+activation='eval "$(/opt/homebrew/bin/brew shellenv zsh)"'
+grep -qxF "$activation" "$zprofile" 2>/dev/null || printf '%s\n' "$activation" >> "$zprofile"
+
 # install mise
 if [ ! -f "$HOME/.local/bin/mise" ]; then
   curl https://mise.run | sh
 else
   echo "Mise already installed. Skipping installation."
 fi
+
+activation='eval "$(mise activate zsh)"'
+grep -qxF "$activation" "$zshrc" 2>/dev/null || printf '%s\n' "$activation" >> "$zshrc"
 
 #
 CONFIG_FILE="config.yml"

@@ -2,7 +2,7 @@
 age = "latest"
 atuin = "latest"
 bat = "latest"
-eza = "0.23.4" # pinned: cargo-quickinstall hasn't published an aarch64-apple-darwin build for 0.23.5 yet
+eza = "latest" # pinned: cargo-quickinstall hasn't published an aarch64-apple-darwin build for 0.23.5 yet
 fzf = "latest"
 gum = "latest"
 jq = "latest"
@@ -29,6 +29,7 @@ k9s = "latest"
 github-cli = "latest"
 glab = { version = "latest", exe = "glab" }
 vault = "latest"
+fd = "latest"
 
 [settings]
 experimental = true

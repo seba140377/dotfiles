@@ -6,10 +6,8 @@ PROJECT_NAME = "{{ config_root | basename }}"
 
 [hooks]
 enter = [
-'echo ""',
-'echo "[MISE] Setup $PROJECT_NAME project..."',
-#
-'mise i -q',
-#
-'pre-commit install'
+    'echo ""',
+    'echo "[MISE] Setup $PROJECT_NAME project..."',
+    'mise i -q',
+    'pre-commit install',
 ]

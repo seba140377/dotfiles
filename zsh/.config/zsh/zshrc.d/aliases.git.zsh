@@ -1,3 +1,9 @@
+alias gst='git status'
+alias gco='git checkout'
+alias gcm='git commit'
+alias gp='git push'
+alias gl='git log'
+
 function gac() {
 	git add .
 

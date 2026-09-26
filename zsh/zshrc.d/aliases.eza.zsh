@@ -1,6 +1,0 @@
-alias ls='eza'
-alias l='eza -lbF --git'
-alias ll='eza -lbGF --git'
-alias llm='eza -lbGd --git --sort=modified'
-alias la='eza -lbhHigUmuSa --time-style=long-iso --git --color-scale'
-alias lx='eza -lbhHigUmuSa@ --time-style=long-iso --git --color-scale'

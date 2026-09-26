@@ -7,20 +7,22 @@ brews:
   - name: dos2unix
   - name: figlet
   - name: bfg
-  - name: orbstack
-    cask: true
-  - name: headlamp
-    cask: true
   - name: controlplaneio-fluxcd/tap/flux-operator-mcp
   - name: controlplaneio-fluxcd/tap/flux-operator
   - name: gnupg
   - name: watch
   - name: gnu-tar
+  - name: orbstack
+    cask: true
+  - name: headlamp
+    cask: true
 custom:
   - bash-commons
-  - mani
+  # - mani
   - vault-mcp-server
 mise:
+  - fd
+  - ripgrep
   - age
   - atuin
   - bat
@@ -54,8 +56,7 @@ mise:
 npm:
   - oclif
   - "@fission-ai/openspec@latest"
-pip:
-  - "headroom-ai[all]"
+pip: []
 stows:
   - atuin
   - zsh
@@ -64,5 +65,5 @@ stows:
   - starship
   - zellij
   - neofetch
-  - claude
+  # - claude
   - notes
