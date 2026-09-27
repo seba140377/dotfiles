@@ -69,18 +69,18 @@ else
     verbose_echo "   x No zsh enable scripts available."
 fi
 
-# verbose_echo ""
-# verbose_echo "🚀 ${bold}${blue}Enable ZSH Functions${normal}"
-# verbose_echo ""
-# files=($ZDOTDIR/zshrc.d/functions.*.zsh)
-# if (( ${#files[@]} > 0 )); then
-#     for f in "${files[@]}"; do
-#         verbose_echo "   • $(basename "$f")..."
-#         source "$f"
-#     done
-# else
-#     verbose_echo "   x No zsh function scripts available."
-# fi
+verbose_echo ""
+verbose_echo "🚀 ${bold}${blue}Enable ZSH Functions${normal}"
+verbose_echo ""
+files=($ZDOTDIR/zshrc.d/functions.*.zsh)
+if (( ${#files[@]} > 0 )); then
+    for f in "${files[@]}"; do
+        verbose_echo "   • $(basename "$f")..."
+        source "$f"
+    done
+else
+    verbose_echo "   x No zsh function scripts available."
+fi
 
 verbose_echo ""
 verbose_echo "🚀 ${bold}${blue}Enable aliases${normal}"
@@ -96,3 +96,10 @@ else
 fi
 
 # # === [END] ZSHRC.D AND ALIASES ===
+
+# if BANNER is set to true, show the welcome banner
+if [[ $BANNER == "true" ]]; then
+    verbose_echo ""
+    # clear
+    $ZDOTDIR/welcome-banner.sh
+fi

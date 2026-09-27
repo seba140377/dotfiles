@@ -12,9 +12,14 @@ brews:
   - name: gnupg
   - name: watch
   - name: gnu-tar
+  - name: neovim
   - name: orbstack
     cask: true
   - name: headlamp
+    cask: true
+  - name: font-hack-nerd-font
+    cask: true
+  - name: wezterm
     cask: true
 custom:
   - bash-commons
@@ -67,3 +72,5 @@ stows:
   - neofetch
   # - claude
   - notes
+  - wezterm
+  - nvim
