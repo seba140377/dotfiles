@@ -16,6 +16,7 @@ All package installations and stow operations are defined in `config.yml`:
 - `mise`: Development tools managed by mise (also duplicated in `mise/.config/mise/config.toml`)
 - `npm`: Global npm packages to install
 - `pip`: Global pip packages to install
+- `claude`: Claude Code plugin `marketplaces` (GitHub `owner/repo`) and `plugins` (`<plugin>@<marketplace>`) to ensure are installed
 - `stows`: Directories to symlink using GNU Stow
 
 ### Directory Structure Pattern
@@ -74,6 +75,7 @@ Installs Homebrew, mise, all packages from config.yml, sets up user details, and
 ./setup.sh --mise      # Only install mise-managed tools
 ./setup.sh --npm       # Only install global npm packages
 ./setup.sh --pip       # Only install global pip packages
+./setup.sh --claude    # Only add Claude Code marketplaces and install plugins (idempotent)
 ```
 Useful for testing configuration changes or re-running a single install step without a full setup.
 
@@ -97,5 +99,5 @@ For adding new packages, tools, or stow directories, see the `dotfiles-add-packa
 - `zsh/zshrc.d/`: Modular ZSH scripts for tool activation, aliases, and functions
 - `git/.gitconfig`: Git configuration (includes user-specific local config)
 - `welcome-banner.sh`: MOTD-style welcome banner (system info, greeting, last login)
-- `custom/install_*.sh`: Custom installation scripts (bash-commons, mani, vault-mcp-server)
+- `custom/install_*.sh`: Custom installation scripts (bash-commons, claude-code, mani, vault-mcp-server)
 - `~/.user_details`: User-specific details (name, email) in YAML format

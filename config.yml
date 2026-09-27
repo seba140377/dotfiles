@@ -24,7 +24,7 @@ brews:
     cask: true
 custom:
   - bash-commons
-  # - mani
+  - claude-code
   - vault-mcp-server
 mise:
   - fd
@@ -61,8 +61,19 @@ mise:
   - vault
 npm:
   - oclif
-  - "@fission-ai/openspec@latest"
+  # - "@fission-ai/openspec@latest"
 pip: []
+claude:
+  # GitHub repos (owner/repo) that provide a Claude Code plugin marketplace
+  marketplaces:
+    - multica-ai/andrej-karpathy-skills
+    - obra/superpowers-marketplace
+    - sflab-io/skills
+  # Plugins to install, as <plugin>@<marketplace-name>
+  plugins:
+    - andrej-karpathy-skills@karpathy-skills
+    - superpowers@superpowers-marketplace
+    - sflabio-skills@sflabio
 stows:
   - atuin
   - zsh
@@ -71,7 +82,6 @@ stows:
   - starship
   - zellij
   - neofetch
-  # - claude
   - notes
   - wezterm
   - nvim

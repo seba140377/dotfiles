@@ -30,6 +30,7 @@ github-cli = "latest"
 glab = { version = "latest", exe = "glab" }
 vault = "latest"
 fd = "latest"
+ripgrep = "latest"
 
 [settings]
 experimental = true
