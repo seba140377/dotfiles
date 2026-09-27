@@ -1,4 +1,3 @@
-/.tokensave
 /.git
 /.gitignore
 /.pre-commit-config.yaml
@@ -8,5 +7,4 @@
 /README.md
 /setup.sh
 /teardown.sh
-/welcome-banner.sh
 /.DS_Store

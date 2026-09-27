@@ -2,6 +2,11 @@
 
 clear
 
+zshrc="${ZDOTDIR:-$HOME}/.zshrc"
+zprofile="${ZDOTDIR:-$HOME}/.zprofile"
+mkdir -p "$(dirname "$zshrc")"
+mkdir -p "$(dirname "$zprofile")"
+
 # installl brew
 if ! command -v brew &> /dev/null; then
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
@@ -9,12 +14,18 @@ else
   echo "Homebrew already installed. Skipping installation."
 fi
 
+activation='eval "$(/opt/homebrew/bin/brew shellenv zsh)"'
+grep -qxF "$activation" "$zprofile" 2>/dev/null || printf '%s\n' "$activation" >> "$zprofile"
+
 # install mise
 if [ ! -f "$HOME/.local/bin/mise" ]; then
   curl https://mise.run | sh
 else
   echo "Mise already installed. Skipping installation."
 fi
+
+activation='eval "$(mise activate zsh)"'
+grep -qxF "$activation" "$zshrc" 2>/dev/null || printf '%s\n' "$activation" >> "$zshrc"
 
 #
 CONFIG_FILE="config.yml"
@@ -163,6 +174,48 @@ install_global_pip_packages() {
   done
 }
 
+# Ensures Claude Code plugin marketplaces and plugins from config.yml are installed
+# - Adds each marketplace (GitHub owner/repo) unless it is already registered
+# - Installs each plugin (<plugin>@<marketplace>) unless it is already installed
+# - Refreshes marketplaces so already installed plugins can be updated
+# - Safe to re-run on fresh and existing installations
+install_claude_plugins() {
+  CLAUDE="$HOME/.local/bin/claude"
+
+  echo ""
+  echo "🔸 Installing Claude Code plugins..."
+
+  if [ ! -x "$CLAUDE" ]; then
+    echo "   Claude Code not found at $CLAUDE. Run ./setup.sh --custom first."
+    return 1
+  fi
+
+  MARKETPLACES=$(yq -r '.claude.marketplaces[]' "$CONFIG_FILE" | tr '\n' ' ')
+  PLUGINS=$(yq -r '.claude.plugins[]' "$CONFIG_FILE" | tr '\n' ' ')
+
+  known_repos=$("$CLAUDE" plugin marketplace list --json | jq -r '.[].repo // empty')
+  for repo in $MARKETPLACES; do
+    if echo "$known_repos" | grep -qxF "$repo"; then
+      echo "   Marketplace already added: $repo"
+    else
+      echo "   Adding marketplace: $repo ..."
+      "$CLAUDE" plugin marketplace add "$repo" > /dev/null
+    fi
+  done
+
+  "$CLAUDE" plugin marketplace update > /dev/null 2>&1
+
+  installed=$("$CLAUDE" plugin list --json | jq -r '.[].id // empty')
+  for plugin in $PLUGINS; do
+    if echo "$installed" | grep -qxF "$plugin"; then
+      echo "   Plugin already installed: $plugin"
+    else
+      echo "   Installing plugin: $plugin ..."
+      "$CLAUDE" plugin install "$plugin" --scope user > /dev/null
+    fi
+  done
+}
+
 # Installs development tools and language runtimes globally using mise
 # - Reads the list of mise packages from the config file
 # - Iterates through each package (e.g., node, python, ruby)
@@ -250,11 +303,21 @@ if [ "$1" = "--pip" ]; then
   exit 0
 fi
 
+# Check for --claude flag
+if [ "$1" = "--claude" ]; then
+  prepare
+  install_claude_plugins
+  echo ""
+  echo "✅ Claude Code plugins installed successfully!"
+  exit 0
+fi
+
 prepare
 ask_for_user_details
 install_brew_packages
 install_custom_tools
 install_mise_tools
+install_claude_plugins
 install_global_npm_packages
 install_global_pip_packages
 stow_dotfiles

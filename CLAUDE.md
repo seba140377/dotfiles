@@ -4,35 +4,54 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-This is a personal dotfiles repository that uses GNU Stow for symlink management, Homebrew for package installation, and mise for development tool management. The repository is structured to allow declarative configuration through `config.yml` and automated setup through shell scripts.
+This is a personal macOS dotfiles repository that uses GNU Stow for symlink management, Homebrew for package installation, and mise for development tool management. The repository is structured to allow declarative configuration through `config.yml` and automated setup through shell scripts.
 
 ## Architecture
 
 ### Configuration-Driven Design
 
 All package installations and stow operations are defined in `config.yml`:
-- `brews`: Homebrew formulas and casks to install
+- `brews`: Homebrew formulas and casks to install (`cask: true` for casks)
 - `custom`: Custom tools requiring specialized installation scripts (located in `custom/install_<name>.sh`)
 - `mise`: Development tools managed by mise (also duplicated in `mise/.config/mise/config.toml`)
 - `npm`: Global npm packages to install
 - `pip`: Global pip packages to install
+- `claude`: Claude Code plugin `marketplaces` (GitHub `owner/repo`) and `plugins` (`<plugin>@<marketplace>`) to ensure are installed
 - `stows`: Directories to symlink using GNU Stow
 
 ### Directory Structure Pattern
 
-Each stow package (e.g., `zsh/`, `git/`, `mise/`) contains a directory tree that mirrors the home directory structure. When stowed, files are symlinked to their corresponding locations:
-- `git/.gitconfig` → `~/.gitconfig`
-- `mise/.config/mise/config.toml` → `~/.config/mise/config.toml`
-- `zsh/.zshrc` → `~/.zshrc`
+Each stow package (e.g., `zsh/`, `git/`, `mise/`) contains a directory tree that mirrors the home directory structure. Most packages follow the XDG layout under `.config/`. When stowed, files are symlinked to their corresponding locations:
+- `git/.gitconfig` → `~/.gitconfig` (and `git/.gitignore` → `~/.gitignore`, used as the global `core.excludesfile`)
+- `zsh/.config/zsh/` → `~/.config/zsh/`
+- `mise/.config/mise/` → `~/.config/mise/`
+- `nvim/.config/nvim/` → `~/.config/nvim/` (LazyVim-based config)
+- `herdr/`, `wezterm/`, `zellij/`, `starship/`, `atuin/`, `neofetch/` → their respective `~/.config/...` paths
+- `notes/notes/` → `~/notes/`
+
+`.stow-local-ignore` excludes repo-level files (`setup.sh`, `config.yml`, `CLAUDE.md`, etc.) from stowing. `setup.sh` stows with `--adopt`, so existing files in `$HOME` are pulled into the repo — check `git diff` after stowing.
 
 ### ZSH Configuration Architecture
 
-The `.zshrc` (in `zsh/.zshrc`) uses a modular loading system that sources scripts from `~/zshrc.d/` and uses ZINIT for plugin management:
-- `enable.*.zsh`: Tool activation scripts (mise, starship, atuin, fzf, zoxide, thefuck, kubectl, helm, flux, flux-operator, mani, pnpm, zellij, homelab-cli)
-- `aliases.*.zsh`: Tool-specific aliases (bat, eza, fzf, mise, kubectl, claude)
-- `functions.*.zsh`: Custom shell functions (git)
+ZSH uses `ZDOTDIR=~/.config/zsh`. This is set by `/etc/zshenv` (outside the repo, a manual prerequisite; `setup.sh` does not create it). There is no `~/.zshrc`.
 
-These scripts are stored in `zsh/zshrc.d/` and stowed to `~/zshrc.d/`.
+Files in `zsh/.config/zsh/`:
+- `.zshenv`: XDG base dirs, `EDITOR`/`VISUAL` (nano), `GPG_TTY`, `~/.local/bin` on `PATH`, Homebrew shellenv
+- `.zprofile`: Homebrew shellenv
+- `.zshrc`: history, shell options, `mise activate`, `compinit`, then sources modular scripts from `$ZDOTDIR/zshrc.d/` and runs `welcome-banner.sh`. `VERBOSE` and `BANNER` flags at the top control startup output.
+- `completions/`: Checked-in completion files for `mise` and `zellij` (built-in generation doesn't work; regenerate manually after upgrading those tools — see comments in `enable.mise.zsh` / `enable.zellij.zsh`)
+- `welcome-banner.sh`: MOTD-style banner (system info, greeting, last login)
+
+Modular scripts in `zsh/.config/zsh/zshrc.d/`, loaded in this order:
+- `enable.*.zsh`: Tool activation (atuin, fzf, herdr, mise, plugins, pnpm, starship, thefuck, zellij, zoxide)
+- `functions.*.zsh`: Custom shell functions (`zshreload`)
+- `aliases.*.zsh`: Tool-specific aliases (bat, eza, fzf, git incl. `gac`/`gacp` functions, kubectl, mise, ripgrep)
+
+Scripts renamed to `*.zsh_disabled` are not loaded (currently: flux, flux-operator, helm, homelab-cli, kubectl). Rename back to `.zsh` to enable.
+
+Plugins are managed without a plugin manager by `enable.plugins.zsh`: `_zplugin_load <owner> <repo>` shallow-clones into `$ZDOTDIR/plugins/` on first use; `zplugin-update` pulls all of them. Loaded: zsh-autosuggestions, zsh-history-substring-search, zsh-vi-mode, fast-syntax-highlighting.
+
+Some scripts skip setup inside Claude Code (`$CLAUDECODE == 1`): the `cat`→`bat` alias and the `cd`→zoxide override.
 
 ### User-Specific Configuration
 
@@ -45,10 +64,10 @@ The setup process creates `~/.user_details` (YAML format with name/email) and ge
 ### mise Configuration Hierarchy
 
 There are two mise configuration files:
-- **`mise.toml`** (repository root): Project-specific configuration with pre-commit hooks that auto-install when entering the directory
-- **`mise/.config/mise/config.toml`** (stowed to `~/.config/mise/config.toml`): Global tool versions and environment variables (SOPS/Age configuration)
+- **`mise.toml`** (repository root): Project-specific configuration; its `enter` hook runs `mise i` and `pre-commit install` when entering the directory
+- **`mise/.config/mise/config.toml`** (stowed to `~/.config/mise/config.toml`): Global tool versions, `experimental = true`, and environment variables (SOPS/Age configuration)
 
-Note: The global config may have slightly different pinned versions than `config.yml` (e.g. `eza` is pinned to `0.23.4` in `mise/.config/mise/config.toml` due to a missing aarch64-apple-darwin build, but unpinned in `config.yml`). Both files should be kept in sync when adding tools.
+The tool list in `config.yml` (`mise:`) and `[tools]` in `mise/.config/mise/config.toml` must be kept in sync when adding tools. Version pins may be expressed as `tool@version` in `config.yml` and `tool = "version"` in the TOML.
 
 ### Global mise Tasks
 
@@ -64,7 +83,7 @@ Task scripts in `mise/.config/mise/tasks/` are stowed to `~/.config/mise/tasks/`
 ```bash
 ./setup.sh
 ```
-Installs Homebrew, mise, all packages from config.yml, sets up user details, and stows dotfiles.
+Installs Homebrew and mise, prompts for user details, installs brew/custom/mise tools, Claude Code plugins, npm and pip packages, stows dotfiles, and writes `~/.gitconfig.local`. Must be run from the repository root (reads `config.yml` relatively); custom install scripts are expected at `~/dotfiles/custom/`.
 
 ### Partial Setup Flags
 ```bash
@@ -74,16 +93,30 @@ Installs Homebrew, mise, all packages from config.yml, sets up user details, and
 ./setup.sh --mise      # Only install mise-managed tools
 ./setup.sh --npm       # Only install global npm packages
 ./setup.sh --pip       # Only install global pip packages
+./setup.sh --claude    # Only add Claude Code marketplaces and install plugins (idempotent; needs ~/.local/bin/claude)
 ```
 Useful for testing configuration changes or re-running a single install step without a full setup.
+
+### Manual Stow Operations
+```bash
+stow <package>      # Symlink a single package
+stow -R <package>   # Restow after adding/removing files
+stow -D <package>   # Remove a package's symlinks
+stow -n -v <package> # Dry run
+```
 
 ### Teardown/Uninstall
 ```bash
 ./teardown.sh
 ```
-**Note**: Currently disabled. The script needs to be manually uncommented before use. Would unstow all dotfiles and remove installed configurations.
+**Note**: Currently disabled. The script needs to be manually uncommented before use. Would unstow all dotfiles.
 
-For adding new packages, tools, or stow directories, see the `dotfiles-add-package` skill.
+### Adding Packages
+- **Homebrew**: add to `brews` in `config.yml` (with `cask: true` for casks), run `./setup.sh --brew`
+- **mise tool**: add to `mise` in `config.yml` **and** `[tools]` in `mise/.config/mise/config.toml`, run `./setup.sh --mise`
+- **Custom tool**: create an idempotent `custom/install_<name>.sh`, add `<name>` to `custom` in `config.yml`
+- **Stow package**: create `<name>/<path-from-home>/...`, add to `stows` in `config.yml`, run `stow <name>`
+- **Shell integration**: add `zsh/.config/zsh/zshrc.d/enable.<tool>.zsh` guarded by `command -v <tool>`
 
 ## Important Files
 
@@ -93,9 +126,13 @@ For adding new packages, tools, or stow directories, see the `dotfiles-add-packa
 - `mise.toml`: Root-level mise configuration with pre-commit hooks
 - `mise/.config/mise/config.toml`: Global mise tool versions and environment variables
 - `.pre-commit-config.yaml`: Pre-commit hooks (gitleaks secrets scan, end-of-file-fixer, trailing-whitespace)
-- `zsh/.zshrc`: Main ZSH configuration with modular loading and ZINIT plugin management
-- `zsh/zshrc.d/`: Modular ZSH scripts for tool activation, aliases, and functions
+- `.stow-local-ignore`: Repo-level files excluded from stowing
+- `zsh/.config/zsh/.zshrc`: Main ZSH configuration with modular loading
+- `zsh/.config/zsh/zshrc.d/`: Modular ZSH scripts for tool activation, plugins, aliases, and functions
 - `git/.gitconfig`: Git configuration (includes user-specific local config)
-- `welcome-banner.sh`: MOTD-style welcome banner (system info, greeting, last login)
-- `custom/install_*.sh`: Custom installation scripts (bash-commons, mani, vault-mcp-server)
+- `git/.gitignore`: Global git excludes (also ignores `.gitconfig.local`, secrets, keys)
+- `nvim/.config/nvim/`: Neovim (LazyVim) configuration, adapted from omerxx/dotfiles
+- `herdr/.config/herdr/`: herdr configuration and herdr-plus plugin config (plugin auto-installed by `enable.herdr.zsh`)
+- `wezterm/.config/wezterm/wezterm.lua`: WezTerm terminal configuration
+- `custom/install_*.sh`: Custom installation scripts (bash-commons, claude-code, vault-mcp-server)
 - `~/.user_details`: User-specific details (name, email) in YAML format
