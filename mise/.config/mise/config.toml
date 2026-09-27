@@ -31,6 +31,8 @@ glab = { version = "latest", exe = "glab" }
 vault = "latest"
 fd = "latest"
 ripgrep = "latest"
+yt-dlp = { version = "latest", rename_exe = "yt-dlp" }
+ffmpeg = "latest"
 
 [settings]
 experimental = true

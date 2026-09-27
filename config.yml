@@ -59,6 +59,8 @@ mise:
   - github-cli
   - glab
   - vault
+  - yt-dlp
+  - ffmpeg
 npm:
   - oclif
   # - "@fission-ai/openspec@latest"
