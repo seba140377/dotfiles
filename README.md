@@ -1,95 +1,171 @@
 # dotfiles
 
-Personal dotfiles managed with GNU Stow, Homebrew, and mise.
+Personal macOS dotfiles, managed declaratively with [GNU Stow](https://www.gnu.org/software/stow/), [Homebrew](https://brew.sh) and [mise](https://mise.jdx.dev).
 
-## Quick Start
+A single `config.yml` lists every package, tool and dotfile set; `setup.sh` turns it into a working machine.
+
+<details>
+<summary>Table of Contents</summary>
+
+- [About](#about)
+- [Getting Started](#getting-started)
+- [Usage](#usage)
+- [Repository Layout](#repository-layout)
+- [ZSH](#zsh)
+- [Global mise Tasks](#global-mise-tasks)
+- [Adding Things](#adding-things)
+- [Acknowledgments](#acknowledgments)
+
+</details>
+
+## About
+
+### What's Included
+
+| Area | Tools |
+| --- | --- |
+| Shell | zsh (XDG layout, no plugin manager), [starship](https://starship.rs), [atuin](https://atuin.sh), fzf, zoxide, eza, bat, ripgrep, fd |
+| Terminal & editor | [WezTerm](https://wezterm.org), [zellij](https://zellij.dev), [herdr](https://herdr.dev), [Neovim](https://neovim.io) ([LazyVim](https://www.lazyvim.org)) |
+| Dev runtimes | mise, Node (LTS), pnpm, Python 3.12, pre-commit, gitleaks |
+| Kubernetes | kubectl, kubectx/kubens, helm, kustomize, flux2, flux-operator, kubeconform, k9s, Headlamp |
+| Secrets | sops, age, vault, gnupg |
+| Other | OrbStack, GitHub CLI, glab, restic, [Claude Code](https://claude.com/claude-code) + plugins |
+
+See [`config.yml`](config.yml) for the authoritative list.
+
+### Built With
+
+- [GNU Stow](https://www.gnu.org/software/stow/) – symlink farm manager
+- [Homebrew](https://brew.sh) – formulas and casks
+- [mise](https://mise.jdx.dev) – dev tool versions, env vars and tasks
+- [yq](https://github.com/mikefarah/yq) and [gum](https://github.com/charmbracelet/gum) – used by `setup.sh`
+
+## Getting Started
+
+### Prerequisites
+
+- macOS on Apple Silicon (Homebrew path `/opt/homebrew` is assumed)
+- `git` and an internet connection
+- The repo cloned to `~/dotfiles` (custom install scripts are resolved from there)
+- `ZDOTDIR` pointing at `~/.config/zsh`. Add this to `/etc/zshenv` (requires `sudo`):
+
+  ```zsh
+  if [[ -z "$XDG_CONFIG_HOME" ]]; then
+      export XDG_CONFIG_HOME="$HOME/.config"
+  fi
+
+  if [[ -d "$XDG_CONFIG_HOME/zsh" ]]; then
+      export ZDOTDIR="$XDG_CONFIG_HOME/zsh"
+  fi
+  ```
+
+### Installation
 
 ```bash
-# Full system setup (first time)
+git clone git@github.com:abes140377/dotfiles.git ~/dotfiles
+cd ~/dotfiles
 ./setup.sh
-
-# Dotfiles only (no package installation)
-./setup.sh --dotfiles
-
-# Remove all dotfiles
-./teardown.sh
 ```
 
-## What's Included
+`setup.sh` will:
 
-- **Shell**: ZSH with modular configuration
-- **Tools**: starship, atuin, fzf, eza, bat, zoxide, zellij, gum
-- **Dev**: mise, node, claude
-- **Git**: Custom configuration with user-specific settings
-- **Container**: OrbStack
+1. Install Homebrew and mise (if missing), plus `yq` and `gum`
+2. Ask for your name and email (stored in `~/.user_details`)
+3. Install Homebrew formulas/casks, custom tools and mise tools
+4. Add Claude Code plugin marketplaces and install plugins
+5. Install global npm and pip packages
+6. Stow all dotfiles and write `~/.gitconfig.local`
 
-## Configuration
+> [!WARNING]
+> Dotfiles are stowed with `stow --adopt`: existing files in `$HOME` are moved *into* the repo and replaced by symlinks. Review `git diff` afterwards.
 
-Everything is defined in `config.yml`:
-- `brews`: Homebrew packages and casks
-- `mise`: Development tools managed by mise
-- `custom`: Custom installation scripts (in `custom/install_<name>.sh`)
-- `stows`: Directories to symlink with Stow
+## Usage
 
-## How It Works
-
-### Stow Structure
-Each stow package mirrors your home directory:
-```
-git/.gitconfig       → ~/.gitconfig
-zsh/.zshrc          → ~/.zshrc
-mise/.config/mise/  → ~/.config/mise/
-```
-
-### ZSH Modules
-`.zshrc` loads scripts from `~/zshrc.d/`:
-- `enable.*.zsh`: Tool activations (mise, starship, atuin, etc.)
-- `aliases.*.zsh`: Tool-specific aliases
-- `functions.*.zsh`: Custom functions
-
-## Manual Stow Operations
+Run a single step instead of the full setup (always from the repo root):
 
 ```bash
-# Stow a single package
-stow <package-name>
-
-# Remove a package
-stow -D <package-name>
-
-# Restow (after modifying files)
-stow -R <package-name>
+./setup.sh --dotfiles  # Stow dotfiles only
+./setup.sh --brew      # Homebrew formulas and casks
+./setup.sh --custom    # custom/install_*.sh scripts
+./setup.sh --mise      # mise tools
+./setup.sh --npm       # Global npm packages
+./setup.sh --pip       # Global pip packages
+./setup.sh --claude    # Claude Code marketplaces and plugins (requires Claude Code)
 ```
 
-## Adding New Tools
+Manual stow operations:
 
-### Homebrew Package
-1. Add to `config.yml` under `brews`
-2. Run `./setup.sh` or `brew install <package>`
+```bash
+stow <package>        # Symlink a package
+stow -R <package>     # Restow after adding/removing files
+stow -D <package>     # Remove a package's symlinks
+stow -n -v <package>  # Dry run
+```
 
-### mise Tool
-1. Add to `config.yml` under `mise`
-2. Add to `mise/.config/mise/config.toml`
-3. Run `mise install`
+`./teardown.sh` is currently disabled.
 
-### Stow Package
-1. Create directory: `<name>/<path-from-home>/file`
-2. Add to `stows` in `config.yml`
-3. Run `stow <name>`
+## Repository Layout
 
-### Custom Install Script
-1. Create `custom/install_<name>.sh`
-2. Add to `custom` in `config.yml`
-3. Make it idempotent (check if already installed)
+Each stow package mirrors `$HOME`:
 
-## Requirements
+```
+dotfiles/
+├── config.yml            # Single source of truth: brews, custom, mise, npm, pip, claude, stows
+├── setup.sh              # Setup orchestration
+├── mise.toml             # Repo-local mise config (installs pre-commit hooks on enter)
+├── custom/               # install_<name>.sh scripts for tools not in brew/mise
+├── zsh/.config/zsh/      # → ~/.config/zsh/
+├── git/.gitconfig        # → ~/.gitconfig  (includes ~/.gitconfig.local)
+├── git/.gitignore        # → ~/.gitignore  (global excludes)
+├── mise/.config/mise/    # → ~/.config/mise/ (global tools, env, tasks)
+├── nvim/.config/nvim/    # → ~/.config/nvim/
+├── wezterm/, zellij/, herdr/, starship/, atuin/, neofetch/   # → ~/.config/...
+└── notes/notes/          # → ~/notes/
+```
 
-- macOS (tested on Darwin 24.6.0)
-- Internet connection for package downloads
+Files listed in `.stow-local-ignore` (scripts, docs, `config.yml`) are never stowed.
 
-## User Configuration
+## ZSH
 
-On first run, `setup.sh` creates:
-- `~/.user_details`: Your name and email (YAML)
-- `~/.gitconfig.local`: Git user configuration
+`~/.config/zsh/.zshrc` sets history, options and completion, activates mise, then sources scripts from `zshrc.d/`:
 
-The main `.gitconfig` includes the local config automatically.
+| Pattern | Purpose |
+| --- | --- |
+| `enable.*.zsh` | Tool activation and plugins |
+| `functions.*.zsh` | Shell functions (e.g. `zshreload`) |
+| `aliases.*.zsh` | Aliases (`ls`→eza, `cat`→bat, `grep`→rg, git, kubectl, mise, fzf) |
+
+- Rename a script to `*.zsh_disabled` to skip it.
+- Plugins (autosuggestions, history-substring-search, vi-mode, fast-syntax-highlighting) are cloned on first start by `enable.plugins.zsh`; update them with `zplugin-update`.
+- `mise` and `zellij` completions are checked in under `completions/` and must be regenerated after upgrading those tools.
+- Set `VERBOSE` / `BANNER` at the top of `.zshrc` to control startup output.
+
+## Global mise Tasks
+
+Stowed to `~/.config/mise/tasks/` and available everywhere via `mise run <task>`:
+
+| Task | Description |
+| --- | --- |
+| `pre-commit:install` | Install pre-commit hooks in the current project |
+| `python:install-requirements` | Install `requirements.txt` via `uv pip install` |
+| `secrets:show [file]` | Show a decrypted SOPS file (default `.creds.env.yaml`) |
+| `secrets:edit [file]` | Edit a SOPS file (default `.creds.env.yaml`) |
+
+SOPS uses the age key at `~/.config/mise/age.txt` (configured in `mise/.config/mise/config.toml`).
+
+## Adding Things
+
+| What | How |
+| --- | --- |
+| Homebrew package | Add to `brews` in `config.yml` (`cask: true` for casks) → `./setup.sh --brew` |
+| mise tool | Add to `mise` in `config.yml` **and** `[tools]` in `mise/.config/mise/config.toml` → `./setup.sh --mise` |
+| Custom tool | Create an idempotent `custom/install_<name>.sh`, add `<name>` to `custom` |
+| Stow package | Create `<name>/<path-from-home>/…`, add to `stows` → `stow <name>` |
+| Claude plugin | Add to `claude.marketplaces` / `claude.plugins` → `./setup.sh --claude` |
+
+Commits run [pre-commit](https://pre-commit.com) hooks (gitleaks, end-of-file-fixer, trailing-whitespace).
+
+## Acknowledgments
+
+- Neovim config adapted from [omerxx/dotfiles](https://github.com/omerxx/dotfiles)
+- README structure based on [Best-README-Template](https://github.com/othneildrew/Best-README-Template)
