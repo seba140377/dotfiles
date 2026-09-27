@@ -13,6 +13,7 @@ brews:
   - name: watch
   - name: gnu-tar
   - name: neovim
+  - name: herdr
   - name: orbstack
     cask: true
   - name: headlamp
@@ -74,3 +75,4 @@ stows:
   - notes
   - wezterm
   - nvim
+  - herdr
