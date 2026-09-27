@@ -2,7 +2,7 @@
 age = "latest"
 atuin = "latest"
 bat = "latest"
-eza = "latest" # pinned: cargo-quickinstall hasn't published an aarch64-apple-darwin build for 0.23.5 yet
+eza = "latest"
 fzf = "latest"
 gum = "latest"
 jq = "latest"
