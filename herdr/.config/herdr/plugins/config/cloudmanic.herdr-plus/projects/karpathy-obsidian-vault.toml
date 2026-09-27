@@ -1,0 +1,14 @@
+name = "Karpathy Obsidian Vault"
+description = "Go to Karpathy Obsidian Vault (New Workspace)"
+working_dir = "~/Documents/Obsidian/karpathy-obsidian-vault"
+
+[[tabs]]
+name = "vault"
+
+[[tabs.panes]]
+label = "vault"
+
+[[tabs.panes]]
+label = "claude"
+command = "claude"
+split = "right"
