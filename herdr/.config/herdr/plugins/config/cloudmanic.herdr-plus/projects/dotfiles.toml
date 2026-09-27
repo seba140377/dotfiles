@@ -3,5 +3,12 @@ description = "Go to dotfiles (New Workspace)"
 working_dir = "~/dotfiles"
 
 [[tabs]]
-name = "dots"
-command = "nvim ."
+name = "dotfiles"
+
+[[tabs.panes]]
+label = "dotfiles"
+
+[[tabs.panes]]
+label = "claude"
+command = "claude"
+split = "right"
