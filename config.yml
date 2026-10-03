@@ -71,12 +71,14 @@ claude:
     - multica-ai/andrej-karpathy-skills
     - obra/superpowers-marketplace
     - AgriciDaniel/claude-obsidian
+    - mattpocock/skills
     - sflab-io/skills
   # Plugins to install, as <plugin>@<marketplace-name>
   plugins:
     - andrej-karpathy-skills@karpathy-skills
     - superpowers@superpowers-marketplace
     - claude-obsidian@agricidaniel-claude-obsidian
+    - mattpocock@mattpocock-skills
     - sflabio-skills@sflabio
 stows:
   - atuin
