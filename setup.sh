@@ -193,13 +193,15 @@ install_claude_plugins() {
   MARKETPLACES=$(yq -r '.claude.marketplaces[]' "$CONFIG_FILE" | tr '\n' ' ')
   PLUGINS=$(yq -r '.claude.plugins[]' "$CONFIG_FILE" | tr '\n' ' ')
 
+  failed=0
+
   known_repos=$("$CLAUDE" plugin marketplace list --json | jq -r '.[].repo // empty')
   for repo in $MARKETPLACES; do
     if echo "$known_repos" | grep -qxF "$repo"; then
       echo "   Marketplace already added: $repo"
     else
       echo "   Adding marketplace: $repo ..."
-      "$CLAUDE" plugin marketplace add "$repo" > /dev/null
+      "$CLAUDE" plugin marketplace add "$repo" > /dev/null || failed=$((failed + 1))
     fi
   done
 
@@ -211,11 +213,14 @@ install_claude_plugins() {
       echo "   Plugin already installed: $plugin"
     else
       echo "   Installing plugin: $plugin ..."
-      "$CLAUDE" plugin install "$plugin" --scope user > /dev/null
+      "$CLAUDE" plugin install "$plugin" --scope user > /dev/null || failed=$((failed + 1))
     fi
   done
 
-  configure_claude_statusline
+  if [ "$failed" -gt 0 ]; then
+    echo "   ⚠️  $failed marketplace/plugin operation(s) failed — check the errors above and config.yml"
+    return 1
+  fi
 }
 
 # Points Claude Code's statusLine at the stowed wrapper (claude/.claude/statusline-wrapper.sh)
@@ -330,7 +335,13 @@ fi
 if [ "$1" = "--claude" ]; then
   prepare
   install_claude_plugins
+  plugins_status=$?
+  configure_claude_statusline
   echo ""
+  if [ "$plugins_status" -ne 0 ]; then
+    echo "❌ Claude Code plugin installation finished with errors"
+    exit 1
+  fi
   echo "✅ Claude Code plugins installed successfully!"
   exit 0
 fi
@@ -341,6 +352,7 @@ install_brew_packages
 install_custom_tools
 install_mise_tools
 install_claude_plugins
+configure_claude_statusline
 install_global_npm_packages
 install_global_pip_packages
 stow_dotfiles
