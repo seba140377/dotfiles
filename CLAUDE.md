@@ -30,7 +30,7 @@ Each stow package (e.g., `zsh/`, `git/`, `mise/`) contains a directory tree that
 - `notes/notes/` → `~/notes/`
 - `claude/.claude/` → `~/.claude/` (only `statusline.sh` and `statusline-wrapper.sh`; the rest of `~/.claude/` is not managed by stow)
 
-`.stow-local-ignore` excludes repo-level files (`setup.sh`, `config.yml`, `CLAUDE.md`, etc.) from stowing. `setup.sh` stows with `--adopt`, so existing files in `$HOME` are pulled into the repo — check `git diff` after stowing.
+`.stow-local-ignore` excludes repo-level files (`setup.sh`, `config.yml`, `CLAUDE.md`, etc.) from stowing. `setup.sh` stows without `--adopt`: existing real files at target paths in `$HOME` cause a stow conflict for that package instead of being pulled into the repo. Resolve by moving the file away, or run `stow --adopt <package>` manually and check `git diff`.
 
 ### ZSH Configuration Architecture
 

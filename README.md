@@ -77,7 +77,7 @@ cd ~/dotfiles
 6. Stow all dotfiles and write `~/.gitconfig.local`
 
 > [!WARNING]
-> Dotfiles are stowed with `stow --adopt`: existing files in `$HOME` are moved *into* the repo and replaced by symlinks. Review `git diff` afterwards.
+> Dotfiles are stowed without `--adopt`: if a real file already exists at a target path in `$HOME`, stow reports a conflict and skips that package. Move or delete the existing file (or run `stow --adopt <package>` manually and review `git diff`), then re-run `./setup.sh --dotfiles`.
 
 ## Usage
 
