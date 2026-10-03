@@ -252,7 +252,8 @@ stow_dotfiles() {
 
   for stow in $STOWS; do
     echo "   Stowing: $stow ..."
-    stow "$stow" --adopt
+    stow "$stow"
+    # stow "$stow" --adopt
   done
 }
 
