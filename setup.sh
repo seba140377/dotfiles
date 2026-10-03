@@ -218,7 +218,7 @@ install_claude_plugins() {
   done
 
   if [ "$failed" -gt 0 ]; then
-    echo "   ⚠️  $failed marketplace/plugin operation(s) failed — check the errors above and config.yml"
+    echo "   ❌ $failed marketplace/plugin operation(s) failed — check the errors above and config.yml"
     return 1
   fi
 }
@@ -340,11 +340,8 @@ if [ "$1" = "--claude" ]; then
   install_claude_plugins
   plugins_status=$?
   configure_claude_statusline
+  [ "$plugins_status" -ne 0 ] && exit 1
   echo ""
-  if [ "$plugins_status" -ne 0 ]; then
-    echo "❌ Claude Code plugin installation finished with errors"
-    exit 1
-  fi
   echo "✅ Claude Code installed successfully!"
   exit 0
 fi
@@ -354,12 +351,18 @@ ask_for_user_details
 install_brew_packages
 install_custom_tools
 install_mise_tools
-install_claude_plugins
+install_claude_plugins || setup_failed=1
 configure_claude_statusline
 install_global_npm_packages
 install_global_pip_packages
 stow_dotfiles
 create_user_specific_files
+
+if [ -n "$setup_failed" ]; then
+  echo ""
+  echo "❌ Setup finished with errors — see the messages above"
+  exit 1
+fi
 
 readme=$(cat <<EOF
 # ✅ Setup completed successfully!
