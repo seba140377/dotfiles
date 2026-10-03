@@ -1,5 +1,4 @@
 {
-    "update.enableWindowsBackgroundUpdates": false,
     "update.showReleaseNotes": false,
     "workbench.colorTheme": "One Dark Pro",
     "terminal.integrated.autoReplies": {},
@@ -19,10 +18,6 @@
     "git.openRepositoryInParentFolders": "never",
     "liveshare.diagnosticLogging": true,
     "liveshare.diagnosticLoggingLevel": "Info",
-    "security.allowedUNCHosts": [
-        "wsl.localhost",
-        "wsl$"
-    ],
     "redhat.telemetry.enabled": false,
     "editor.minimap.enabled": false,
     "workbench.editor.empty.hint": "hidden",
