@@ -214,6 +214,28 @@ install_claude_plugins() {
       "$CLAUDE" plugin install "$plugin" --scope user > /dev/null
     fi
   done
+
+  configure_claude_statusline
+}
+
+# Points Claude Code's statusLine at the stowed wrapper (claude/.claude/statusline-wrapper.sh)
+# - Only touches the .statusLine key; all other settings are preserved
+# - Backs up settings.json before changing it; no-op if already configured
+configure_claude_statusline() {
+  SETTINGS="$HOME/.claude/settings.json"
+  STATUSLINE_CMD="~/.claude/statusline-wrapper.sh"
+
+  [ -f "$SETTINGS" ] || echo '{}' > "$SETTINGS"
+
+  if [ "$(jq -r '.statusLine.command // empty' "$SETTINGS")" = "$STATUSLINE_CMD" ]; then
+    echo "   Statusline already configured"
+    return 0
+  fi
+
+  echo "   Configuring statusline ..."
+  cp "$SETTINGS" "$SETTINGS.bak"
+  jq --arg cmd "$STATUSLINE_CMD" '.statusLine = {type: "command", command: $cmd, padding: 0}' \
+    "$SETTINGS.bak" > "$SETTINGS.tmp" && mv "$SETTINGS.tmp" "$SETTINGS"
 }
 
 # Installs development tools and language runtimes globally using mise
