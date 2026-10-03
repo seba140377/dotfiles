@@ -230,6 +230,9 @@ configure_claude_statusline() {
   SETTINGS="$HOME/.claude/settings.json"
   STATUSLINE_CMD="~/.claude/statusline-wrapper.sh"
 
+  echo ""
+  echo "🔸 Configuring Claude Code statusline..."
+
   [ -f "$SETTINGS" ] || echo '{}' > "$SETTINGS"
 
   if [ "$(jq -r '.statusLine.command // empty' "$SETTINGS")" = "$STATUSLINE_CMD" ]; then
@@ -342,7 +345,7 @@ if [ "$1" = "--claude" ]; then
     echo "❌ Claude Code plugin installation finished with errors"
     exit 1
   fi
-  echo "✅ Claude Code plugins installed successfully!"
+  echo "✅ Claude Code installed successfully!"
   exit 0
 fi
 
