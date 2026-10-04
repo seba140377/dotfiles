@@ -46,7 +46,7 @@ See [`config.yml`](config.yml) for the authoritative list.
 
 - macOS on Apple Silicon (Homebrew path `/opt/homebrew` is assumed)
 - `git` and an internet connection
-- The repo cloned to `~/dotfiles` (custom install scripts are resolved from there)
+- The repo cloned anywhere, e.g. `~/projects/seba140377/src/dotfiles` (`setup.sh` resolves paths relative to itself and stows into `$HOME`)
 - `ZDOTDIR` pointing at `~/.config/zsh`. Add this to `/etc/zshenv` (requires `sudo`):
 
   ```zsh
@@ -62,8 +62,8 @@ See [`config.yml`](config.yml) for the authoritative list.
 ### Installation
 
 ```bash
-git clone git@github.com:abes140377/dotfiles.git ~/dotfiles
-cd ~/dotfiles
+git clone git@github.com:abes140377/dotfiles.git ~/projects/seba140377/src/dotfiles
+cd ~/projects/seba140377/src/dotfiles
 ./setup.sh
 ```
 

@@ -1,6 +1,6 @@
 name = "Dotfiles"
 description = "Go to dotfiles (New Workspace)"
-working_dir = "~/dotfiles"
+working_dir = "~/projects/seba140377/src/dotfiles"
 
 [[tabs]]
 name = "dotfiles"

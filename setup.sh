@@ -27,8 +27,9 @@ fi
 activation='eval "$(mise activate zsh)"'
 grep -qxF "$activation" "$zshrc" 2>/dev/null || printf '%s\n' "$activation" >> "$zshrc"
 
-#
-CONFIG_FILE="config.yml"
+# Repository root (directory of this script), so setup.sh works wherever the repo is cloned
+DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_FILE="$DOTFILES_DIR/config.yml"
 
 # Prepares the environment by activating mise and installing required tools
 # - Activates mise for the shell
@@ -101,10 +102,10 @@ install_brew_packages() {
   done
 }
 
-# Installs custom tools using installation scripts from ~/dotfiles/custom/
+# Installs custom tools using installation scripts from $DOTFILES_DIR/custom/
 # - Reads the list of custom packages from the config file
 # - For each custom package, executes its corresponding install script
-# - Install scripts are expected to be located at ~/dotfiles/custom/install_<package>.sh
+# - Install scripts are expected to be located at $DOTFILES_DIR/custom/install_<package>.sh
 # - This allows for flexible installation of tools that require custom setup beyond brew
 install_custom_tools() {
   # Read custom packages from config.yml
@@ -117,14 +118,14 @@ install_custom_tools() {
     echo ""
     echo "   Installing: $pkg ..."
 
-    bash "$HOME/dotfiles/custom/install_$pkg.sh"
+    bash "$DOTFILES_DIR/custom/install_$pkg.sh"
   done
 }
 
-# Installs custom tools using installation scripts from ~/dotfiles/custom/
+# Installs custom tools using installation scripts from $DOTFILES_DIR/custom/
 # - Reads the list of custom packages from the config file
 # - For each custom package, executes its corresponding install script
-# - Install scripts are expected to be located at ~/dotfiles/custom/install_<package>.sh
+# - Install scripts are expected to be located at $DOTFILES_DIR/custom/install_<package>.sh
 # - This allows for flexible installation of tools that require custom setup beyond brew
 install_mise_tools() {
   # Read mise packages from config.yml
@@ -260,14 +261,14 @@ stow_dotfiles() {
 
   for stow in $STOWS; do
     echo "   Stowing: $stow ..."
-    stow "$stow"
-    # stow "$stow" --adopt
+    stow -d "$DOTFILES_DIR" -t "$HOME" "$stow"
+    # stow -d "$DOTFILES_DIR" -t "$HOME" "$stow" --adopt
   done
 }
 
 # Uses GNU Stow to symlink dotfiles from the repository to the home directory
 # - Reads the list of stow packages from the config file
-# - For each package, creates symlinks from ~/dotfiles/<package>/ to ~/
+# - For each package, creates symlinks from $DOTFILES_DIR/<package>/ to ~/
 # - This allows version-controlled dotfiles to be easily managed and deployed
 # - Stow automatically handles directory structures and prevents conflicts
 create_user_specific_files() {

@@ -9,8 +9,8 @@
 if command -v mise >/dev/null 2>&1; then
   # Generate completions manually since the built-in method does not work
   # !!! Must be regenerated whenever Mise is updated !!!
-  #   mkdir -p $HOME/dotfiles/zsh/.config/zsh/completions
-  #   mise completion zsh > $HOME/dotfiles/zsh/.config/zsh/completions/_mise
+  #   mkdir -p $HOME/projects/seba140377/src/dotfiles/zsh/.config/zsh/completions
+  #   mise completion zsh > $HOME/projects/seba140377/src/dotfiles/zsh/.config/zsh/completions/_mise
 
   fpath+=("$ZDOTDIR/completions")
   autoload -Uz _mise

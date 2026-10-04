@@ -4,8 +4,8 @@ if command -v zellij >/dev/null 2>&1; then
 
   # Generate completions manually since the built-in method does not work
   # !!! Must be regenerated whenever Zellij is updated !!!
-  #   mkdir -p $HOME/dotfiles/zsh/.config/zsh/completions
-  #   zellij setup --generate-completion zsh > $HOME/dotfiles/zsh/.config/zsh/completions/_zellij
+  #   mkdir -p $HOME/projects/seba140377/src/dotfiles/zsh/.config/zsh/completions
+  #   zellij setup --generate-completion zsh > $HOME/projects/seba140377/src/dotfiles/zsh/.config/zsh/completions/_zellij
 
   fpath+=("$ZDOTDIR/completions")
   autoload -Uz _zellij

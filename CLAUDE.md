@@ -31,7 +31,7 @@ Each stow package (e.g., `zsh/`, `git/`, `mise/`) contains a directory tree that
 - `claude/.claude/` → `~/.claude/` (only `statusline.sh` and `statusline-wrapper.sh`; the rest of `~/.claude/` is not managed by stow)
 - `vscode/Library/Application Support/Code/User/` → `~/Library/Application Support/Code/User/` (only `settings.json` and `keybindings.json`; these belong to the default profile; additional VS Code profiles only pick them up if they are set to use the default profile's settings/keybindings)
 
-`.stow-local-ignore` excludes repo-level files (`setup.sh`, `config.yml`, `CLAUDE.md`, etc.) from stowing. `setup.sh` stows without `--adopt`: existing real files at target paths in `$HOME` cause a stow conflict for that package instead of being pulled into the repo. Resolve by moving the file away, or run `stow --adopt <package>` manually and check `git diff`.
+The stow target is always `$HOME`, independent of where the repo is cloned (currently `~/projects/seba140377/src/dotfiles`): `setup.sh` calls `stow -d <repo> -t "$HOME"`, and `.stowrc` (`--target=~`) does the same for manual `stow` commands run from the repo root. `.stow-local-ignore` excludes repo-level files (`setup.sh`, `config.yml`, `CLAUDE.md`, etc.) from stowing. `setup.sh` stows without `--adopt`: existing real files at target paths in `$HOME` cause a stow conflict for that package instead of being pulled into the repo. Resolve by moving the file away, or run `stow --adopt <package>` manually and check `git diff`.
 
 ### ZSH Configuration Architecture
 
@@ -85,7 +85,7 @@ Task scripts in `mise/.config/mise/tasks/` are stowed to `~/.config/mise/tasks/`
 ```bash
 ./setup.sh
 ```
-Installs Homebrew and mise, prompts for user details, installs brew/custom/mise tools, Claude Code plugins, npm and pip packages, stows dotfiles, and writes `~/.gitconfig.local`. Must be run from the repository root (reads `config.yml` relatively); custom install scripts are expected at `~/dotfiles/custom/`.
+Installs Homebrew and mise, prompts for user details, installs brew/custom/mise tools, Claude Code plugins, npm and pip packages, stows dotfiles, and writes `~/.gitconfig.local`. Paths (`config.yml`, `custom/`, the stow directory) are resolved relative to the script via `DOTFILES_DIR`, so it can be run from any directory.
 
 ### Partial Setup Flags
 ```bash
@@ -101,6 +101,7 @@ Useful for testing configuration changes or re-running a single install step wit
 
 ### Manual Stow Operations
 ```bash
+# Run from the repo root so .stowrc (--target=~) is picked up
 stow <package>      # Symlink a single package
 stow -R <package>   # Restow after adding/removing files
 stow -D <package>   # Remove a package's symlinks
@@ -129,6 +130,7 @@ stow -n -v <package> # Dry run
 - `mise/.config/mise/config.toml`: Global mise tool versions and environment variables
 - `.pre-commit-config.yaml`: Pre-commit hooks (gitleaks secrets scan, end-of-file-fixer, trailing-whitespace)
 - `.stow-local-ignore`: Repo-level files excluded from stowing
+- `.stowrc`: Default stow options (`--target=~`) for manual `stow` commands run from the repo root
 - `zsh/.config/zsh/.zshrc`: Main ZSH configuration with modular loading
 - `zsh/.config/zsh/zshrc.d/`: Modular ZSH scripts for tool activation, plugins, aliases, and functions
 - `git/.gitconfig`: Git configuration (includes user-specific local config)
