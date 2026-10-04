@@ -2,10 +2,7 @@
 
 clear
 
-zshrc="${ZDOTDIR:-$HOME}/.zshrc"
-zprofile="${ZDOTDIR:-$HOME}/.zprofile"
-mkdir -p "$(dirname "$zshrc")"
-mkdir -p "$(dirname "$zprofile")"
+# Shell activation for brew and mise comes from the stowed zsh/.config/zsh/.zprofile and .zshrc
 
 # installl brew
 if ! command -v brew &> /dev/null; then
@@ -14,18 +11,12 @@ else
   echo "Homebrew already installed. Skipping installation."
 fi
 
-activation='eval "$(/opt/homebrew/bin/brew shellenv zsh)"'
-grep -qxF "$activation" "$zprofile" 2>/dev/null || printf '%s\n' "$activation" >> "$zprofile"
-
 # install mise
 if [ ! -f "$HOME/.local/bin/mise" ]; then
   curl https://mise.run | sh
 else
   echo "Mise already installed. Skipping installation."
 fi
-
-activation='eval "$(mise activate zsh)"'
-grep -qxF "$activation" "$zshrc" 2>/dev/null || printf '%s\n' "$activation" >> "$zshrc"
 
 # Repository root (directory of this script), so setup.sh works wherever the repo is cloned
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
