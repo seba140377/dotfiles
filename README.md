@@ -72,7 +72,7 @@ cd ~/projects/seba140377/src/dotfiles
 1. Install Homebrew and mise (if missing), plus `yq` and `gum`
 2. Ask for your name and email (stored in `~/.user_details`)
 3. Install Homebrew formulas/casks, custom tools and mise tools
-4. Add Claude Code plugin marketplaces, install plugins and configure the statusline
+4. Add Claude Code plugin marketplaces, install plugins, configure the statusline and permission deny rules
 5. Install global npm and pip packages
 6. Stow all dotfiles and write `~/.gitconfig.local`
 
@@ -90,7 +90,7 @@ Run a single step instead of the full setup (always from the repo root):
 ./setup.sh --mise      # mise tools
 ./setup.sh --npm       # Global npm packages
 ./setup.sh --pip       # Global pip packages
-./setup.sh --claude    # Claude Code marketplaces, plugins and statusline (requires Claude Code)
+./setup.sh --claude    # Claude Code marketplaces, plugins, statusline and permissions (requires Claude Code)
 ```
 
 Manual stow operations:
@@ -163,6 +163,7 @@ SOPS uses the age key at `~/.config/mise/age.txt` (configured in `mise/.config/m
 | Custom tool | Create an idempotent `custom/install_<name>.sh`, add `<name>` to `custom` |
 | Stow package | Create `<name>/<path-from-home>/…`, add to `stows` → `stow <name>` |
 | Claude plugin | Add to `claude.marketplaces` / `claude.plugins` → `./setup.sh --claude` |
+| Claude permission rule | Add to `claude.permissions.deny` → `./setup.sh --claude` |
 
 Commits run [pre-commit](https://pre-commit.com) hooks (gitleaks, end-of-file-fixer, trailing-whitespace).
 

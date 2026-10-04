@@ -240,6 +240,30 @@ configure_claude_statusline() {
     "$SETTINGS.bak" > "$SETTINGS.tmp" && mv "$SETTINGS.tmp" "$SETTINGS"
 }
 
+# Adds the permissions.deny rules from config.yml to Claude Code's settings
+# - Only touches .permissions.deny; existing rules are kept (union)
+# - Backs up settings.json before changing it; no-op if all rules are present
+configure_claude_permissions() {
+  SETTINGS="$HOME/.claude/settings.json"
+
+  echo ""
+  echo "🔸 Configuring Claude Code permissions..."
+
+  [ -f "$SETTINGS" ] || echo '{}' > "$SETTINGS"
+
+  DENY=$(yq -o=json '.claude.permissions.deny // []' "$CONFIG_FILE")
+  missing=$(jq --argjson deny "$DENY" '$deny - (.permissions.deny // []) | length' "$SETTINGS")
+  if [ "$missing" -eq 0 ]; then
+    echo "   Permissions already configured"
+    return 0
+  fi
+
+  echo "   Adding $missing deny rule(s) ..."
+  cp "$SETTINGS" "$SETTINGS.bak"
+  jq --argjson deny "$DENY" '.permissions.deny = ((.permissions.deny // []) + $deny | unique)' \
+    "$SETTINGS.bak" > "$SETTINGS.tmp" && mv "$SETTINGS.tmp" "$SETTINGS"
+}
+
 # Installs development tools and language runtimes globally using mise
 # - Reads the list of mise packages from the config file
 # - Iterates through each package (e.g., node, python, ruby)
@@ -334,6 +358,7 @@ if [ "$1" = "--claude" ]; then
   install_claude_plugins
   plugins_status=$?
   configure_claude_statusline
+  configure_claude_permissions
   [ "$plugins_status" -ne 0 ] && exit 1
   echo ""
   echo "✅ Claude Code installed successfully!"
@@ -347,6 +372,7 @@ install_custom_tools
 install_mise_tools
 install_claude_plugins || setup_failed=1
 configure_claude_statusline
+configure_claude_permissions
 install_global_npm_packages
 install_global_pip_packages
 stow_dotfiles
