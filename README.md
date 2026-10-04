@@ -119,7 +119,7 @@ dotfiles/
 ├── git/.gitignore        # → ~/.gitignore  (global excludes)
 ├── mise/.config/mise/    # → ~/.config/mise/ (global tools, env, tasks)
 ├── nvim/.config/nvim/    # → ~/.config/nvim/
-├── claude/.claude/       # → ~/.claude/statusline*.sh (cc-statusline + Orca wrapper)
+├── claude/.claude/       # → ~/.claude/statusline*.sh (cc-statusline + Orca wrapper), global CLAUDE.md
 ├── wezterm/, zellij/, herdr/, starship/, atuin/, neofetch/   # → ~/.config/...
 └── notes/notes/          # → ~/notes/
 ```

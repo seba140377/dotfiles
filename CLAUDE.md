@@ -28,7 +28,7 @@ Each stow package (e.g., `zsh/`, `git/`, `mise/`) contains a directory tree that
 - `nvim/.config/nvim/` → `~/.config/nvim/` (LazyVim-based config)
 - `herdr/`, `wezterm/`, `zellij/`, `starship/`, `atuin/`, `neofetch/` → their respective `~/.config/...` paths
 - `notes/notes/` → `~/notes/`
-- `claude/.claude/` → `~/.claude/` (only `statusline.sh` and `statusline-wrapper.sh`; the rest of `~/.claude/` is not managed by stow)
+- `claude/.claude/` → `~/.claude/` (only `statusline.sh`, `statusline-wrapper.sh` and the global `CLAUDE.md` with user-wide Claude Code instructions; the rest of `~/.claude/` is not managed by stow)
 - `vscode/Library/Application Support/Code/User/` → `~/Library/Application Support/Code/User/` (only `settings.json` and `keybindings.json`; these belong to the default profile; additional VS Code profiles only pick them up if they are set to use the default profile's settings/keybindings)
 
 The stow target is always `$HOME`, independent of where the repo is cloned (currently `~/projects/seba140377/src/dotfiles`): `setup.sh` calls `stow -d <repo> -t "$HOME"`, and `.stowrc` (`--target=~`) does the same for manual `stow` commands run from the repo root. `.stow-local-ignore` excludes repo-level files (`setup.sh`, `config.yml`, `CLAUDE.md`, etc.) from stowing. `setup.sh` stows without `--adopt`: existing real files at target paths in `$HOME` cause a stow conflict for that package instead of being pulled into the repo. Resolve by moving the file away, or run `stow --adopt <package>` manually and check `git diff`.
