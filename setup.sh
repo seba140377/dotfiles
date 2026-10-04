@@ -24,15 +24,17 @@ CONFIG_FILE="$DOTFILES_DIR/config.yml"
 
 # Prepares the environment by activating mise and installing required tools
 # - Activates mise for the shell
-# - Installs yq (YAML processor) globally
-# - Installs gum (shell script UI tool) globally
+# - Installs yq (YAML processor) and gum (shell script UI tool) and puts them on PATH
+#   for this script only, without 'mise use -g': that would create a real
+#   ~/.config/mise/config.toml when the stowed symlink is missing, which then
+#   blocks stowing the mise package
 # - Runs mise install to ensure all tools are available for further use
 prepare() {
   # Activate mise for the bash shell because this script is run using bash
   eval "$($HOME/.local/bin/mise activate bash)"
 
-  $HOME/.local/bin/mise use -g yq > /dev/null 2>&1
-  $HOME/.local/bin/mise use -g gum > /dev/null 2>&1
+  $HOME/.local/bin/mise install yq@latest gum@latest > /dev/null 2>&1
+  eval "$($HOME/.local/bin/mise env -s bash yq@latest gum@latest)"
 
   $HOME/.local/bin/mise install > /dev/null 2>&1
 }
