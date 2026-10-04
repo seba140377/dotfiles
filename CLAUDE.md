@@ -16,7 +16,7 @@ All package installations and stow operations are defined in `config.yml`:
 - `mise`: Development tools managed by mise (also duplicated in `mise/.config/mise/config.toml`)
 - `npm`: Global npm packages to install
 - `pip`: Global pip packages to install
-- `claude`: Claude Code plugin `marketplaces` (GitHub `owner/repo`) and `plugins` (`<plugin>@<marketplace>`) to ensure are installed, plus `permissions.deny` rules merged into `~/.claude/settings.json` (currently: all write tools of the claude.ai Gmail, Google Calendar and Google Drive connectors, which stay read-only)
+- `claude`: Claude Code plugin `marketplaces` (GitHub `owner/repo`) and `plugins` (`<plugin>@<marketplace>`) to ensure are installed, plus `permissions.deny` rules merged into `~/.claude/settings.json` (currently: all write tools of the claude.ai Gmail, Google Calendar, Google Drive and Slack connectors, which stay read-only)
 - `stows`: Directories to symlink using GNU Stow
 
 ### Directory Structure Pattern

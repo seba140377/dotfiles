@@ -81,7 +81,7 @@ claude:
     - mattpocock-skills@mattpocock
     - sflabio-skills@sflabio
   # Permission rules merged into permissions.deny of ~/.claude/settings.json
-  # Google connectors stay read-only: all write tools are blocked
+  # Google and Slack connectors stay read-only: all write tools are blocked
   permissions:
     deny:
       # Gmail
@@ -120,6 +120,20 @@ claude:
       - mcp__claude_ai_Google_Drive__share_file
       - mcp__claude_ai_Google_Drive__trash_file
       - mcp__claude_ai_Google_Drive__update_file
+      # Slack
+      - mcp__claude_ai_Slack__slack_add_list_record
+      - mcp__claude_ai_Slack__slack_add_reaction
+      - mcp__claude_ai_Slack__slack_complete_file_upload
+      - mcp__claude_ai_Slack__slack_create_canvas
+      - mcp__claude_ai_Slack__slack_create_conversation
+      - mcp__claude_ai_Slack__slack_create_list
+      - mcp__claude_ai_Slack__slack_get_file_upload_url
+      - mcp__claude_ai_Slack__slack_schedule_message
+      - mcp__claude_ai_Slack__slack_send_message
+      - mcp__claude_ai_Slack__slack_send_message_draft
+      - mcp__claude_ai_Slack__slack_update_canvas
+      - mcp__claude_ai_Slack__slack_update_list
+      - mcp__claude_ai_Slack__slack_update_list_record
 stows:
   - atuin
   - zsh
