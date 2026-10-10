@@ -2,10 +2,6 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Repository Overview
-
-This is a personal macOS dotfiles repository that uses GNU Stow for symlink management, Homebrew for package installation, and mise for development tool management. The repository is structured to allow declarative configuration through `config.yml` and automated setup through shell scripts.
-
 ## Architecture
 
 ### Configuration-Driven Design
@@ -22,12 +18,7 @@ All package installations and stow operations are defined in `config.yml`:
 ### Directory Structure Pattern
 
 Each stow package (e.g., `zsh/`, `git/`, `mise/`) contains a directory tree that mirrors the home directory structure. Most packages follow the XDG layout under `.config/`. When stowed, files are symlinked to their corresponding locations:
-- `git/.gitconfig` → `~/.gitconfig` (and `git/.gitignore` → `~/.gitignore`, used as the global `core.excludesfile`)
-- `zsh/.config/zsh/` → `~/.config/zsh/`
-- `mise/.config/mise/` → `~/.config/mise/`
 - `nvim/.config/nvim/` → `~/.config/nvim/` (LazyVim-based config)
-- `herdr/`, `wezterm/`, `zellij/`, `starship/`, `atuin/`, `neofetch/` → their respective `~/.config/...` paths
-- `notes/notes/` → `~/notes/`
 - `claude/.claude/` → `~/.claude/` (only `statusline.sh`, `statusline-wrapper.sh` and the global `CLAUDE.md` with user-wide Claude Code instructions; the rest of `~/.claude/` is not managed by stow)
 - `vscode/Library/Application Support/Code/User/` → `~/Library/Application Support/Code/User/` (only `settings.json` and `keybindings.json`; these belong to the default profile; additional VS Code profiles only pick them up if they are set to use the default profile's settings/keybindings)
 
@@ -38,16 +29,8 @@ The stow target is always `$HOME`, independent of where the repo is cloned (curr
 ZSH uses `ZDOTDIR=~/.config/zsh`. This is set by `/etc/zshenv` (outside the repo, a manual prerequisite; `setup.sh` does not create it). There is no `~/.zshrc`.
 
 Files in `zsh/.config/zsh/`:
-- `.zshenv`: XDG base dirs, `EDITOR`/`VISUAL` (nano), `GPG_TTY`, `~/.local/bin` on `PATH`, Homebrew shellenv
-- `.zprofile`: Homebrew shellenv
 - `.zshrc`: history, shell options, `mise activate`, `compinit`, then sources modular scripts from `$ZDOTDIR/zshrc.d/` and runs `welcome-banner.sh`. `VERBOSE` and `BANNER` flags at the top control startup output.
 - `completions/`: Checked-in completion files for `mise` and `zellij` (built-in generation doesn't work; regenerate manually after upgrading those tools — see comments in `enable.mise.zsh` / `enable.zellij.zsh`)
-- `welcome-banner.sh`: MOTD-style banner (system info, greeting, last login)
-
-Modular scripts in `zsh/.config/zsh/zshrc.d/`, loaded in this order:
-- `enable.*.zsh`: Tool activation (atuin, fzf, herdr, mise, plugins, pnpm, starship, thefuck, zellij, zoxide)
-- `functions.*.zsh`: Custom shell functions (`zshreload`)
-- `aliases.*.zsh`: Tool-specific aliases (bat, eza, fzf, git incl. `gac`/`gacp` functions, kubectl, mise, ripgrep)
 
 Scripts renamed to `*.zsh_disabled` are not loaded (currently: flux, flux-operator, helm, homelab-cli, kubectl). Rename back to `.zsh` to enable.
 
@@ -73,11 +56,7 @@ The tool list in `config.yml` (`mise:`) and `[tools]` in `mise/.config/mise/conf
 
 ### Global mise Tasks
 
-Task scripts in `mise/.config/mise/tasks/` are stowed to `~/.config/mise/tasks/` and become available as `mise run <task>` in any project once mise is activated:
-- `pre-commit:install`: Installs pre-commit hooks in the current project
-- `python:install-requirements`: Installs Python packages from `requirements.txt` via `uv pip install`
-- `secrets:show <file>`: Shows the decrypted contents of a SOPS-encrypted secrets file (default: `.creds.env.yaml`)
-- `secrets:edit <file>`: Opens a SOPS-encrypted secrets file for editing with SOPS (default: `.creds.env.yaml`)
+Task scripts in `mise/.config/mise/tasks/` are stowed to `~/.config/mise/tasks/` and become available as `mise run <task>` in any project once mise is activated (`mise tasks` lists them).
 
 ## Common Commands
 
@@ -99,15 +78,6 @@ Installs Homebrew and mise, prompts for user details, installs brew/custom/mise 
 ```
 Useful for testing configuration changes or re-running a single install step without a full setup.
 
-### Manual Stow Operations
-```bash
-# Run from the repo root so .stowrc (--target=~) is picked up
-stow <package>      # Symlink a single package
-stow -R <package>   # Restow after adding/removing files
-stow -D <package>   # Remove a package's symlinks
-stow -n -v <package> # Dry run
-```
-
 ### Teardown/Uninstall
 ```bash
 ./teardown.sh
@@ -123,23 +93,8 @@ stow -n -v <package> # Dry run
 
 ## Important Files
 
-- `config.yml`: Single source of truth for all installations
-- `setup.sh`: Main setup orchestration script
-- `teardown.sh`: Cleanup and uninstall script (currently disabled)
-- `mise.toml`: Root-level mise configuration with pre-commit hooks
-- `mise/.config/mise/config.toml`: Global mise tool versions and environment variables
-- `.pre-commit-config.yaml`: Pre-commit hooks (gitleaks secrets scan, end-of-file-fixer, trailing-whitespace)
-- `.stow-local-ignore`: Repo-level files excluded from stowing
-- `.stowrc`: Default stow options (`--target=~`) for manual `stow` commands run from the repo root
-- `zsh/.config/zsh/.zshrc`: Main ZSH configuration with modular loading
-- `zsh/.config/zsh/zshrc.d/`: Modular ZSH scripts for tool activation, plugins, aliases, and functions
-- `git/.gitconfig`: Git configuration (includes user-specific local config)
-- `git/.gitignore`: Global git excludes (also ignores `.gitconfig.local`, secrets, keys)
 - `nvim/.config/nvim/`: Neovim (LazyVim) configuration, adapted from omerxx/dotfiles
 - `herdr/.config/herdr/`: herdr configuration and herdr-plus plugin config (plugin auto-installed by `enable.herdr.zsh`)
 - `vscode/Library/Application Support/Code/User/settings.json`: VS Code user settings (incl. `terminal.integrated.rightClickBehavior: nothing` so herdr gets the right-click); `keybindings.json` next to it
-- `wezterm/.config/wezterm/wezterm.lua`: WezTerm terminal configuration
 - `claude/.claude/statusline.sh`: Claude Code statusline generated by [cc-statusline](https://github.com/chongdashu/cc-statusline) (`npx @chongdashu/cc-statusline@latest init`, then move the result from `~/.claude/statusline.sh` into the repo and `stow -R claude` — the generator ignores `--output` and writes nothing with `--no-install`)
 - `claude/.claude/statusline-wrapper.sh`: The actual `statusLine` command; forwards the JSON payload to Orca's hook (`~/.orca/agent-hooks/claude-statusline.sh`, if present) in the background, then runs `statusline.sh`. `configure_claude_statusline` in `setup.sh` writes only the `.statusLine` key and `configure_claude_permissions` only adds to `.permissions.deny` of `~/.claude/settings.json` (backup in `settings.json.bak`); `settings.json` itself is not stowed
-- `custom/install_*.sh`: Custom installation scripts (bash-commons, claude-code, vault-mcp-server)
-- `~/.user_details`: User-specific details (name, email) in YAML format
