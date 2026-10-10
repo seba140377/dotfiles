@@ -64,7 +64,7 @@ mise:
   - ffmpeg
 npm:
   - oclif
-  # - "@fission-ai/openspec@latest"
+  - openwiki
 pip: []
 claude:
   # GitHub repos (owner/repo) that provide a Claude Code plugin marketplace
