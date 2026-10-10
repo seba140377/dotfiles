@@ -26,8 +26,7 @@
     "git.autofetch": true,
     "workbench.editorAssociations": {
         "*.copilotmd": "vscode.markdown.preview.editor",
-        "*.jar": "default",
-        "*.md": "vscode.markdown.editor"
+        "*.jar": "default"
     },
     "terminal.integrated.defaultProfile.linux": "zsh",
     "github.copilot.preferredAccount": "abes140377",

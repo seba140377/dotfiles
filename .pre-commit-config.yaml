@@ -7,4 +7,6 @@ repos:
     rev: v6.0.0
     hooks:
       - id: end-of-file-fixer
+        # VS Code writes settings.json without a final newline; don't fight it
+        exclude: ^vscode/Library/Application Support/Code/User/settings\.json$
       - id: trailing-whitespace
