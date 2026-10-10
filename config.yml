@@ -73,7 +73,7 @@ claude:
     - obra/superpowers-marketplace
     - AgriciDaniel/claude-obsidian
     - mattpocock/skills
-    - sflab-io/skills
+    - sflabio/skills
   # Plugins to install, as <plugin>@<marketplace-name>
   plugins:
     - andrej-karpathy-skills@karpathy-skills
