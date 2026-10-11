@@ -127,4 +127,5 @@
     "editor.wordWrap": "on",
     // herdr: pass right-click (context menu) through to the terminal app
     "terminal.integrated.rightClickBehavior": "nothing",
+    "task.allowAutomaticTasks": "on",
 }
