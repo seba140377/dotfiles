@@ -1,0 +1,132 @@
+#!/bin/bash
+# Runs the vault skill `tagesplanung` unattended via `claude -p` (launchd routine).
+# Usage: tagesplanung-run [heute|morgen|woche]
+#   no mode: from 12:00 `morgen` (+ `woche` on Sundays); before 12:00, i.e. a
+#   run launchd caught up after midnight, `heute` (+ `woche` on Mondays).
+# Exit: 0 ok, 1 a run failed or invalid mode, 2 macOS access for ekread missing.
+# Overridable for tests: TP_VAULT TP_CLAUDE TP_NOTIFY TP_LOG TP_NOW ("YYYY-MM-DD HH")
+#   TP_TIMEOUT (seconds per claude run) TP_PATH_PREFIX
+
+set -euo pipefail
+
+TP_VAULT="${TP_VAULT:-/Users/seba/projects/seba140377/src/claude-code-os}"
+TP_CLAUDE="${TP_CLAUDE:-claude}"
+TP_NOTIFY="${TP_NOTIFY:-}"
+TP_LOG="${TP_LOG:-$HOME/Library/Logs/tagesplanung.log}"
+TP_TIMEOUT="${TP_TIMEOUT:-600}"
+KEEP_RUNS=30
+
+# launchd starts without a login shell
+PATH="${TP_PATH_PREFIX:+$TP_PATH_PREFIX:}$HOME/.local/bin:$HOME/.local/share/mise/shims:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+export PATH
+
+TOOLS=(
+  "Bash(ekread:*)" Read Grep Glob "Edit(plans/**)" "Bash(mkdir:*)" "Bash(date:*)"
+  mcp__claude_ai_Gmail__search_threads mcp__claude_ai_Gmail__get_thread
+  "Bash(git add:*)" "Bash(git diff:*)" "Bash(git commit:*)" "Bash(git push:*)"
+)
+WEEKDAYS=(_ Montag Dienstag Mittwoch Donnerstag Freitag Samstag Sonntag)
+
+now="${TP_NOW:-$(date '+%F %H')}"
+today="${now% *}"
+hour=$((10#${now#* }))
+dow=$(date -j -f %F "$today" +%u)
+
+notify() {
+  if [ -n "$TP_NOTIFY" ]; then
+    "$TP_NOTIFY" "$1"
+  else
+    osascript -e "display notification \"$1\" with title \"Tagesplanung\"" || true
+  fi
+}
+
+day_offset() { date -j -v"$2"d -f %F "$1" +%F; }
+
+# trim_log: keep the last KEEP_RUNS runs (each starts with a "=== " line)
+# shellcheck disable=SC2329 # invoked via trap
+trim_log() {
+  [ -f "$TP_LOG" ] || return 0
+  local runs from
+  runs=$(grep -c '^=== ' "$TP_LOG" || true)
+  [ "$runs" -gt "$KEEP_RUNS" ] || return 0
+  from=$(grep -n '^=== ' "$TP_LOG" | sed -n "$((runs - KEEP_RUNS + 1))p" | cut -d: -f1)
+  tail -n +"$from" "$TP_LOG" >"$TP_LOG.tmp" && mv "$TP_LOG.tmp" "$TP_LOG"
+}
+
+# plan_day <mode>: the day the plan file is named after (week: a day in that week)
+plan_day() {
+  case "$1" in
+    heute) echo "$today" ;;
+    morgen) day_offset "$today" +1 ;;
+    woche) if [ "$dow" = 7 ]; then day_offset "$today" +1; else echo "$today"; fi ;;
+  esac
+}
+
+target_file() {
+  local d
+  d=$(plan_day "$1")
+  if [ "$1" = woche ]; then
+    echo "plans/$(date -j -f %F "$d" +%G-W%V) Wochenplan.md"
+  else
+    echo "plans/$d Tagesplan.md"
+  fi
+}
+
+success_message() {
+  local d
+  d=$(plan_day "$1")
+  if [ "$1" = woche ]; then
+    echo "Wochenplan KW $((10#$(date -j -f %F "$d" +%V))) bereit"
+  else
+    echo "Tagesplan für ${WEEKDAYS[$(date -j -f %F "$d" +%u)]}, $(date -j -f %F "$d" +%d.%m.) bereit"
+  fi
+}
+
+# run_mode <mode>: one claude run; 0 if the plan file was (re)generated today
+run_mode() {
+  local mode=$1 file rc=0
+  file=$(target_file "$mode")
+  echo "=== $(date '+%F %T') $mode ===" >>"$TP_LOG"
+  perl -e 'alarm shift; exec @ARGV' "$TP_TIMEOUT" \
+    "$TP_CLAUDE" -p "/tagesplanung $mode --routine" --allowedTools "${TOOLS[@]}" \
+    >>"$TP_LOG" 2>&1 || rc=$?
+  if [ "$rc" = 0 ] && grep -q "^generated: ${today}T" "$file" 2>/dev/null; then
+    notify "$(success_message "$mode")"
+    return 0
+  fi
+  echo "tagesplanung-run: $mode failed (exit $rc, file: $file)" >>"$TP_LOG"
+  notify "Tagesplanung ($mode) fehlgeschlagen, siehe Log"
+  return 1
+}
+
+if [ $# -gt 0 ]; then
+  case "$1" in
+    heute | morgen | woche) modes=("$1") ;;
+    *) echo "usage: tagesplanung-run [heute|morgen|woche]" >&2; exit 1 ;;
+  esac
+elif [ "$hour" -lt 12 ]; then
+  modes=(heute); [ "$dow" = 1 ] && modes+=(woche)
+else
+  modes=(morgen); [ "$dow" = 7 ] && modes+=(woche)
+fi
+
+mkdir -p "$(dirname "$TP_LOG")"
+trap trim_log EXIT
+cd "$TP_VAULT"
+
+ekread_rc=0
+ekread calendars >/dev/null 2>>"$TP_LOG" || ekread_rc=$?
+if [ "$ekread_rc" = 2 ]; then
+  notify "Tagesplanung: macOS-Freigabe für ekread fehlt"
+  exit 2
+elif [ "$ekread_rc" != 0 ]; then
+  echo "tagesplanung-run: ekread failed (exit $ekread_rc)" >>"$TP_LOG"
+  notify "Tagesplanung: ekread-Fehler, siehe Log"
+  exit 1
+fi
+
+status=0
+for mode in "${modes[@]}"; do
+  run_mode "$mode" || status=1
+done
+exit "$status"
