@@ -50,6 +50,8 @@ struct Tests {
 
     static func main() {
         dateTests()
+        argTests()
+        outputTests()
         print("\(count - failures)/\(count) passed")
         exit(failures == 0 ? 0 : 1)
     }
@@ -76,5 +78,65 @@ struct Tests {
               "dayWindow --to only starts today")
         throwsCode(1, "dayWindow rejects to == from") { _ = try window("2026-10-12", "2026-10-12") }
         throwsCode(1, "dayWindow rejects to < from") { _ = try window("2026-10-12", "2026-10-11") }
+    }
+
+    static func args(_ a: [String]) throws -> Command { try parseArgs(a) }
+
+    static func argTests() {
+        check((try? args([])) == .help, "parseArgs empty is help")
+        for h in ["--help", "-h", "help"] {
+            check((try? args([h])) == .help, "parseArgs \(h) is help")
+        }
+        check((try? args(["calendars"])) == .calendars, "parseArgs calendars")
+        check((try? args(["events"])) == .events(from: nil, to: nil, calendars: []), "parseArgs events defaults")
+        check((try? args(["events", "--from", "today", "--calendar", "A", "--calendar", "B"]))
+              == .events(from: "today", to: nil, calendars: ["A", "B"]), "parseArgs events repeated --calendar")
+        check((try? args(["events", "--to", "+3d"])) == .events(from: nil, to: "+3d", calendars: []), "parseArgs events --to")
+        check((try? args(["reminders"])) == .reminders(lists: [], dueBefore: nil, includeCompleted: false),
+              "parseArgs reminders defaults")
+        check((try? args(["reminders", "--include-completed", "--list", "X", "--due-before", "tomorrow"]))
+              == .reminders(lists: ["X"], dueBefore: "tomorrow", includeCompleted: true), "parseArgs reminders options")
+        throwsCode(1, "parseArgs rejects unknown command") { _ = try args(["foo"]) }
+        throwsCode(1, "parseArgs rejects unknown option") { _ = try args(["events", "--bogus"]) }
+        throwsCode(1, "parseArgs rejects missing value") { _ = try args(["events", "--from"]) }
+        throwsCode(1, "parseArgs rejects extra argument") { _ = try args(["calendars", "x"]) }
+        throwsCode(1, "parseArgs rejects --list on events") { _ = try args(["events", "--list", "X"]) }
+
+        let names = ["Privat", "Arbeit", "Privat"]
+        check((try? selectByName(names, names: ["Privat"], kind: "Kalender") { $0 })?.count == 2,
+              "selectByName keeps all same-named calendars")
+        check((try? selectByName(names, names: [], kind: "Kalender") { $0 })?.count == 3, "selectByName empty selects all")
+        throwsCode(1, "selectByName rejects unknown name") {
+            _ = try selectByName(names, names: ["Fehlt"], kind: "Kalender") { $0 }
+        }
+    }
+
+    static func outputTests() {
+        let expected: [(Int, String)] = [(0, "none"), (1, "high"), (4, "high"), (5, "medium"), (6, "low"), (9, "low")]
+        for (p, label) in expected {
+            check(priorityLabel(p) == label, "priorityLabel \(p) is \(label)")
+        }
+
+        let tz = TimeZone(identifier: "Europe/Berlin")!
+        let ev = EventOut(title: "Zahnarzt", start: at("2026-10-12T09:00:00+02:00"), end: at("2026-10-12T10:00:00+02:00"),
+                          allDay: false, calendar: "Privat", location: nil, notes: nil, url: nil, recurring: false)
+        let json = (try? encodeJSON([ev], timeZone: tz)) ?? ""
+        check(json.contains("\"location\" : null"), "encodeJSON writes null for missing location")
+        check(json.contains("\"all_day\" : false"), "encodeJSON uses all_day key")
+        check(json.contains("\"start\" : \"2026-10-12T09:00:00+02:00\""), "encodeJSON writes ISO date with offset")
+        check((try? encodeJSON([EventOut](), timeZone: tz)) == "[\n\n]" || (try? encodeJSON([EventOut](), timeZone: tz)) == "[]",
+              "encodeJSON empty is []")
+
+        let rem = ReminderOut(title: "Müll", list: "Haushalt", due: nil, priority: "none", notes: nil, completed: false)
+        let rjson = (try? encodeJSON([rem], timeZone: tz)) ?? ""
+        check(rjson.contains("\"due\" : null"), "encodeJSON writes null for missing due")
+
+        let a = ReminderOut(title: "a", list: "L", due: nil, priority: "none", notes: nil, completed: false)
+        let b = ReminderOut(title: "b", list: "L", due: at("2026-10-13T00:00:00+02:00"), priority: "none", notes: nil, completed: false)
+        let c = ReminderOut(title: "c", list: "L", due: at("2026-10-12T00:00:00+02:00"), priority: "none", notes: nil, completed: false)
+        check(sortReminders([a, b, c]).map(\.title) == ["c", "b", "a"], "sortReminders by due, undated last")
+
+        check(helpText.contains("events") && helpText.contains("reminders") && helpText.contains("calendars"),
+              "helpText lists commands")
     }
 }
