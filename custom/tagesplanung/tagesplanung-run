@@ -4,7 +4,7 @@
 #   no mode: from 12:00 `morgen` (+ `woche` on Sundays); before 12:00, i.e. a
 #   run launchd caught up after midnight, `heute` (+ `woche` on Mondays).
 # Exit: 0 ok, 1 a run failed or invalid mode, 2 macOS access for ekread missing.
-# Overridable for tests: TP_VAULT TP_CLAUDE TP_NOTIFY TP_LOG TP_NOW ("YYYY-MM-DD HH")
+# Overridable for tests: TP_VAULT TP_CLAUDE TP_NOTIFY TP_LOG TP_NOW ("YYYY-MM-DD HH:MM")
 #   TP_TIMEOUT (seconds per claude run) TP_PATH_PREFIX
 
 set -euo pipefail
@@ -20,16 +20,21 @@ KEEP_RUNS=30
 PATH="${TP_PATH_PREFIX:+$TP_PATH_PREFIX:}$HOME/.local/bin:$HOME/.local/share/mise/shims:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 export PATH
 
+# With --permission-mode dontAsk everything not listed here is denied: the run
+# reads mail from strangers, so nothing may reach the network except Gmail
+# search and a push to the vault's own remote.
 TOOLS=(
   "Bash(ekread:*)" Read Grep Glob "Edit(plans/**)" "Bash(mkdir:*)" "Bash(date:*)"
-  mcp__claude_ai_Gmail__search_threads mcp__claude_ai_Gmail__get_thread
-  "Bash(git add:*)" "Bash(git diff:*)" "Bash(git commit:*)" "Bash(git push:*)"
+  mcp__claude_ai_Gmail__search_threads
+  "Bash(git add:*)" "Bash(git diff:*)" "Bash(git commit:*)"
+  "Bash(git push)" "Bash(git push origin main)"
 )
 WEEKDAYS=(_ Montag Dienstag Mittwoch Donnerstag Freitag Samstag Sonntag)
 
-now="${TP_NOW:-$(date '+%F %H')}"
+now="${TP_NOW:-$(date '+%F %H:%M')}"
 today="${now% *}"
-hour=$((10#${now#* }))
+hour=$((10#$(echo "${now#* }" | cut -d: -f1)))
+started="${today}T${now#* }"   # plan files must be generated at or after this
 dow=$(date -j -f %F "$today" +%u)
 
 notify() {
@@ -82,15 +87,17 @@ success_message() {
   fi
 }
 
-# run_mode <mode>: one claude run; 0 if the plan file was (re)generated today
+# run_mode <mode>: one claude run; 0 if it (re)generated the plan file
 run_mode() {
-  local mode=$1 file rc=0
+  local mode=$1 file gen rc=0
   file=$(target_file "$mode")
   echo "=== $(date '+%F %T') $mode ===" >>"$TP_LOG"
   perl -e 'alarm shift; exec @ARGV' "$TP_TIMEOUT" \
-    "$TP_CLAUDE" -p "/tagesplanung $mode --routine" --allowedTools "${TOOLS[@]}" \
+    "$TP_CLAUDE" -p "/tagesplanung $mode --routine" \
+    --permission-mode dontAsk --allowedTools "${TOOLS[@]}" \
     >>"$TP_LOG" 2>&1 || rc=$?
-  if [ "$rc" = 0 ] && grep -q "^generated: ${today}T" "$file" 2>/dev/null; then
+  gen=$(sed -n 's/^generated: //p' "$file" 2>/dev/null | head -1)
+  if [ "$rc" = 0 ] && [ -n "$gen" ] && ! [[ "$gen" < "$started" ]]; then
     notify "$(success_message "$mode")"
     return 0
   fi

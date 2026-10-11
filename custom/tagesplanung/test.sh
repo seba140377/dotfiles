@@ -36,7 +36,7 @@ case "${STUB_CLAUDE:-write}" in
 esac
 var="STUB_FILE_$mode"
 if [ -n "${!var:-}" ]; then
-  printf -- '---\ngenerated: %sT20:00\n---\n' "$STUB_GEN" >"plans/${!var}"
+  printf -- '---\ngenerated: %sT%s\n---\n' "$STUB_GEN" "${STUB_TIME:-20:00}" >"plans/${!var}"
 fi
 exit 0
 EOF
@@ -57,6 +57,7 @@ notified() { grep -q -- "$1" "$T/notify.txt" 2>/dev/null; }
 no_calls() { [ ! -e "$T/calls.txt" ]; }
 call_count() { [ "$(wc -l <"$T/calls.txt" | tr -d ' ')" = "$1" ]; }
 call_n_has() { sed -n "${1}p" "$T/calls.txt" | grep -q -- "$2"; }
+call_n_lacks() { ! sed -n "${1}p" "$T/calls.txt" | grep -q -- "$2"; }
 
 results="$TMP/results"
 : >"$results"
@@ -68,21 +69,21 @@ invalid_mode() {
   check "claude not called" no_calls
 }
 ekread_denied() {
-  export STUB_EKREAD=2 TP_NOW="2026-10-14 20"
+  export STUB_EKREAD=2 TP_NOW="2026-10-14 20:00"
   run
   check "exit 2" exit_is 2
   check "notify Freigabe" notified Freigabe
   check "claude not called" no_calls
 }
 ekread_error() {
-  export STUB_EKREAD=1 TP_NOW="2026-10-14 20"
+  export STUB_EKREAD=1 TP_NOW="2026-10-14 20:00"
   run
   check "exit 1" exit_is 1
   check "notify Log" notified Log
   check "claude not called" no_calls
 }
 explicit_heute_ok() {
-  export TP_NOW="2026-10-14 20" STUB_GEN=2026-10-14 STUB_FILE_heute="2026-10-14 Tagesplan.md"
+  export TP_NOW="2026-10-14 20:00" STUB_GEN=2026-10-14 STUB_FILE_heute="2026-10-14 Tagesplan.md"
   run heute
   check "exit 0" exit_is 0
   check "prompt" call_n_has 1 "/tagesplanung heute --routine"
@@ -90,14 +91,14 @@ explicit_heute_ok() {
   check "notify bereit" notified "Tagesplan für Mittwoch, 14.10. bereit"
 }
 weekday_evening_morgen() {
-  export TP_NOW="2026-10-14 20" STUB_GEN=2026-10-14 STUB_FILE_morgen="2026-10-15 Tagesplan.md"
+  export TP_NOW="2026-10-14 20:00" STUB_GEN=2026-10-14 STUB_FILE_morgen="2026-10-15 Tagesplan.md"
   run
   check "exit 0" exit_is 0
   check "one call" call_count 1
   check "morgen" call_n_has 1 "/tagesplanung morgen --routine"
 }
 sunday_evening_both() {
-  export TP_NOW="2026-10-11 20" STUB_GEN=2026-10-11 \
+  export TP_NOW="2026-10-11 20:00" STUB_GEN=2026-10-11 \
     STUB_FILE_morgen="2026-10-12 Tagesplan.md" STUB_FILE_woche="2026-W42 Wochenplan.md"
   run
   check "exit 0" exit_is 0
@@ -107,14 +108,14 @@ sunday_evening_both() {
   check "notify KW" notified "Wochenplan KW 42 bereit"
 }
 catchup_morning_heute() {
-  export TP_NOW="2026-10-14 07" STUB_GEN=2026-10-14 STUB_FILE_heute="2026-10-14 Tagesplan.md"
+  export TP_NOW="2026-10-14 07:00" STUB_GEN=2026-10-14 STUB_FILE_heute="2026-10-14 Tagesplan.md"
   run
   check "exit 0" exit_is 0
   check "one call" call_count 1
   check "heute" call_n_has 1 "/tagesplanung heute --routine"
 }
 catchup_morning_monday_week() {
-  export TP_NOW="2026-10-12 07" STUB_GEN=2026-10-12 \
+  export TP_NOW="2026-10-12 07:00" STUB_GEN=2026-10-12 \
     STUB_FILE_heute="2026-10-12 Tagesplan.md" STUB_FILE_woche="2026-W42 Wochenplan.md"
   run
   check "exit 0" exit_is 0
@@ -123,25 +124,25 @@ catchup_morning_monday_week() {
   check "woche second" call_n_has 2 "/tagesplanung woche --routine"
 }
 missing_file_fails() {
-  export TP_NOW="2026-10-14 20" STUB_CLAUDE=none
+  export TP_NOW="2026-10-14 20:00" STUB_CLAUDE=none
   run heute
   check "exit 1" exit_is 1
   check "notify fehlgeschlagen" notified "fehlgeschlagen"
 }
 stale_file_fails() {
-  export TP_NOW="2026-10-14 20" STUB_GEN=2026-10-01 STUB_FILE_heute="2026-10-14 Tagesplan.md"
+  export TP_NOW="2026-10-14 20:00" STUB_GEN=2026-10-01 STUB_FILE_heute="2026-10-14 Tagesplan.md"
   run heute
   check "exit 1" exit_is 1
 }
 morgen_fails_week_still_runs() {
-  export TP_NOW="2026-10-11 20" STUB_GEN=2026-10-11 STUB_CLAUDE=fail-morgen \
+  export TP_NOW="2026-10-11 20:00" STUB_GEN=2026-10-11 STUB_CLAUDE=fail-morgen \
     STUB_FILE_morgen="2026-10-12 Tagesplan.md" STUB_FILE_woche="2026-W42 Wochenplan.md"
   run
   check "exit 1" exit_is 1
   check "woche attempted" call_n_has 2 "/tagesplanung woche --routine"
 }
 timeout_kills_claude() {
-  export TP_NOW="2026-10-14 20" TP_TIMEOUT=1 STUB_CLAUDE=sleep
+  export TP_NOW="2026-10-14 20:00" TP_TIMEOUT=1 STUB_CLAUDE=sleep
   local start=$SECONDS
   run heute
   local took=$((SECONDS - start))
@@ -149,7 +150,7 @@ timeout_kills_claude() {
   check "stopped within 4 s" [ "$took" -lt 4 ]
 }
 log_keeps_30_runs() {
-  export TP_NOW="2026-10-14 20" STUB_GEN=2026-10-14 STUB_FILE_heute="2026-10-14 Tagesplan.md"
+  export TP_NOW="2026-10-14 20:00" STUB_GEN=2026-10-14 STUB_FILE_heute="2026-10-14 Tagesplan.md"
   local _
   for _ in $(seq 35); do run heute; done
   check "30 runs kept" [ "$(grep -c '^=== ' "$T/log")" = 30 ]
@@ -168,11 +169,26 @@ install_copies_files() {
   TP_NO_LAUNCHCTL=1 bash "$HERE/../install_tagesplanung.sh" "$T/inst" "$T/agents" >/dev/null 2>&1 || rc=$?
   check "idempotent" [ "$rc" = 0 ]
 }
+permissions_locked() {
+  export TP_NOW="2026-10-14 20:00" STUB_GEN=2026-10-14 STUB_FILE_heute="2026-10-14 Tagesplan.md"
+  run heute
+  check "dontAsk" call_n_has 1 "--permission-mode dontAsk"
+  check "no get_thread" call_n_lacks 1 "get_thread"
+  check "no open git push" call_n_lacks 1 "git push:"
+  check "push origin main" call_n_has 1 "Bash(git push origin main)"
+}
+same_day_old_file_fails() {
+  export TP_NOW="2026-10-14 20:00" STUB_CLAUDE=none
+  printf -- '---\ngenerated: 2026-10-14T15:00\n---\n' >"$T/vault/plans/2026-10-14 Tagesplan.md"
+  run heute
+  check "exit 1" exit_is 1
+  check "notify fehlgeschlagen" notified "fehlgeschlagen"
+}
 
 for c in invalid_mode ekread_denied ekread_error explicit_heute_ok weekday_evening_morgen \
   sunday_evening_both catchup_morning_heute catchup_morning_monday_week missing_file_fails \
   stale_file_fails morgen_fails_week_still_runs timeout_kills_claude log_keeps_30_runs \
-  install_copies_files; do
+  install_copies_files permissions_locked same_day_old_file_fails; do
   t "$c" "$c"
 done
 
