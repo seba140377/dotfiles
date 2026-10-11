@@ -140,6 +140,10 @@ struct Tests {
         check((try? fetchedOrError([Int](), kind: "Erinnerungen")) == [], "fetchedOrError keeps empty result")
         throwsCode(1, "fetchedOrError rejects failed fetch") { _ = try fetchedOrError([Int]?.none, kind: "Erinnerungen") }
 
+        check(exitCode(fromWaitStatus: 0) == 0, "exitCode normal exit 0")
+        check(exitCode(fromWaitStatus: 2 << 8) == 2, "exitCode normal exit 2")
+        check(exitCode(fromWaitStatus: 15) == 143, "exitCode killed by SIGTERM is 143")
+
         check(helpText.contains("events") && helpText.contains("reminders") && helpText.contains("calendars"),
               "helpText lists commands")
     }

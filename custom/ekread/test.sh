@@ -48,6 +48,13 @@ if grep -nE "$WRITE_CALLS" main.swift Core.swift; then
 else
   echo "ok   read-only: no EventKit write calls"
 fi
+# Child runs (after re-spawn) must report their own exit code and stderr.
+expect "child error propagates" 1 - yes -- "$OUT/ekread" reminders --due-before 2026-02-30
+if nm -u "$OUT/ekread" | grep -q '_responsibility_spawnattrs_setdisclaim'; then
+  echo "ok   re-spawns itself with disclaimed responsibility"
+else
+  echo "FAIL responsibility disclaim not used"; fails=$((fails + 1))
+fi
 if [ -n "$(otool -s __TEXT __info_plist "$OUT/ekread" | sed 1d)" ]; then
   echo "ok   Info.plist embedded"
 else

@@ -15,7 +15,7 @@ func fail(_ e: CLIError) -> Never {
 @MainActor func noAccess(_ type: EKEntityType) -> CLIError {
     let what = type == .event ? "Kalender" : "Erinnerungen"
     return CLIError(
-        message: "Kein Zugriff auf \(what). Freigeben unter Systemeinstellungen → Datenschutz & Sicherheit → \(what) für die startende App (z. B. WezTerm).",
+        message: "Kein Zugriff auf \(what). Freigeben unter Systemeinstellungen → Datenschutz & Sicherheit → \(what) für „ekread“ (Vollzugriff). Nach einem Neubau von ekread ist die Freigabe erneut nötig.",
         code: 2)
 }
 
@@ -98,8 +98,47 @@ func fail(_ e: CLIError) -> Never {
     try output(sortReminders(reminders))
 }
 
+// macOS attributes privacy access to the "responsible" app: the terminal, or
+// the claude binary when Claude Code runs ekread. Those may lack the calendar
+// usage description, and macOS then denies access without asking. So ekread
+// re-spawns itself with disclaimed responsibility: macOS then checks ekread's
+// own embedded Info.plist, and one grant for ekread works everywhere.
+@_silgen_name("responsibility_spawnattrs_setdisclaim")
+func responsibility_spawnattrs_setdisclaim(_ attrs: UnsafeMutablePointer<posix_spawnattr_t?>, _ disclaim: Int32) -> Int32
+
+let disclaimedEnv = "EKREAD_DISCLAIMED"
+
+/// Runs this binary again as a disclaimed child and exits with its status.
+/// Returns only if spawning fails; the caller then continues in-process.
+func respawnDisclaimed() {
+    var size: UInt32 = 0
+    _NSGetExecutablePath(nil, &size)
+    var path = [CChar](repeating: 0, count: Int(size))
+    guard _NSGetExecutablePath(&path, &size) == 0 else { return }
+
+    var attrs: posix_spawnattr_t?
+    posix_spawnattr_init(&attrs)
+    defer { posix_spawnattr_destroy(&attrs) }
+    guard responsibility_spawnattrs_setdisclaim(&attrs, 1) == 0 else { return }
+
+    setenv(disclaimedEnv, "1", 1)
+    let argv = CommandLine.unsafeArgv
+    var pid: pid_t = 0
+    guard posix_spawn(&pid, path, nil, &attrs, argv, environ) == 0 else {
+        unsetenv(disclaimedEnv)
+        return
+    }
+    var status: Int32 = 0
+    while waitpid(pid, &status, 0) == -1 && errno == EINTR {}
+    exit(exitCode(fromWaitStatus: status))
+}
+
 do {
-    switch try parseArgs(Array(CommandLine.arguments.dropFirst())) {
+    let command = try parseArgs(Array(CommandLine.arguments.dropFirst()))
+    if command != .help, ProcessInfo.processInfo.environment[disclaimedEnv] == nil {
+        respawnDisclaimed()
+    }
+    switch command {
     case .help:
         print(helpText)
     case .calendars:

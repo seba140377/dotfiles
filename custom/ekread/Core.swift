@@ -139,6 +139,12 @@ func fetchedOrError<T>(_ items: [T]?, kind: String) throws -> [T] {
     return items
 }
 
+/// Exit code for a waitpid status: the child's code, or 128 + signal.
+func exitCode(fromWaitStatus status: Int32) -> Int32 {
+    let signal = status & 0x7f
+    return signal == 0 ? (status >> 8) & 0xff : 128 + signal
+}
+
 // MARK: - Output
 
 /// EventKit priority (0 none, 1–4 high, 5 medium, 6–9 low) as a label.
