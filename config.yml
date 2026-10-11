@@ -77,6 +77,7 @@ claude:
     - obra/superpowers-marketplace
     - AgriciDaniel/claude-obsidian
     - mattpocock/skills
+    - cloudflare/skills
     - sflabio/skills
   # Plugins to install, as <plugin>@<marketplace-name>
   plugins:
@@ -84,6 +85,7 @@ claude:
     - superpowers@superpowers-marketplace
     - claude-obsidian@agricidaniel-claude-obsidian
     - mattpocock-skills@mattpocock
+    - cloudflare@cloudflare
     - sflabio-skills@sflabio
   # Permission rules merged into permissions.deny of ~/.claude/settings.json
   # Google and Slack connectors stay read-only: all write tools are blocked
