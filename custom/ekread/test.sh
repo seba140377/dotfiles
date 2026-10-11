@@ -28,7 +28,22 @@ expect "--help exits 0" 0 events no -- "$OUT/ekread" --help
 expect "invalid date exits 1" 1 - yes -- "$OUT/ekread" events --from 2026-02-30
 expect "unknown command exits 1" 1 - yes -- "$OUT/ekread" foo
 
-if grep -nE '\.(save|remove|commit|reset)\(' main.swift Core.swift; then
+# EventKit write API: save/remove (also saveCalendar, removeReminder, ...), commit, reset.
+WRITE_CALLS='\.(save|remove)(Calendar|Event|Reminder|Source)?[[:space:]]*\(|\.(commit|reset)[[:space:]]*\('
+for sample in 'store.save(e, span: .thisEvent)' 'store.remove(e, span: .thisEvent)' 'store.saveCalendar(c, commit: true)' \
+  'store.removeReminder(r, commit: true)' 'store.save (e, span: .thisEvent)' 'store.reset()'; do
+  if echo "$sample" | grep -qE "$WRITE_CALLS"; then
+    echo "ok   read-only guard catches: $sample"
+  else
+    echo "FAIL read-only guard misses: $sample"; fails=$((fails + 1))
+  fi
+done
+if echo 'rest.removeFirst()' | grep -qE "$WRITE_CALLS"; then
+  echo "FAIL read-only guard flags Array.removeFirst"; fails=$((fails + 1))
+else
+  echo "ok   read-only guard ignores Array.removeFirst"
+fi
+if grep -nE "$WRITE_CALLS" main.swift Core.swift; then
   echo "FAIL read-only: write call found"; fails=$((fails + 1))
 else
   echo "ok   read-only: no EventKit write calls"

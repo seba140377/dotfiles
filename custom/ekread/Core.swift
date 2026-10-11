@@ -131,6 +131,14 @@ func selectByName<T>(_ items: [T], names: [String], kind: String, name: (T) -> S
     return items.filter { wanted.contains(name($0)) }
 }
 
+/// EventKit reports a failed fetch as nil; never pass that off as "nothing found".
+func fetchedOrError<T>(_ items: [T]?, kind: String) throws -> [T] {
+    guard let items else {
+        throw CLIError(message: "Abruf der \(kind) fehlgeschlagen", code: 1)
+    }
+    return items
+}
+
 // MARK: - Output
 
 /// EventKit priority (0 none, 1–4 high, 5 medium, 6–9 low) as a label.

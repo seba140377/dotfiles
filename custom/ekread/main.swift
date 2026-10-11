@@ -83,9 +83,10 @@ func fail(_ e: CLIError) -> Never {
     let pred = includeCompleted
         ? store.predicateForReminders(in: scope)
         : store.predicateForIncompleteReminders(withDueDateStarting: nil, ending: before, calendars: scope)
-    let found: [EKReminder] = await withCheckedContinuation { cont in
-        store.fetchReminders(matching: pred) { cont.resume(returning: $0 ?? []) }
+    let fetched: [EKReminder]? = await withCheckedContinuation { cont in
+        store.fetchReminders(matching: pred) { cont.resume(returning: $0) }
     }
+    let found = try fetchedOrError(fetched, kind: "Erinnerungen")
     var reminders = found.map { r -> ReminderOut in
         let due = r.dueDateComponents.flatMap { ($0.calendar ?? calendar).date(from: $0) }
         return ReminderOut(

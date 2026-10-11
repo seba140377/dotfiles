@@ -136,6 +136,10 @@ struct Tests {
         let c = ReminderOut(title: "c", list: "L", due: at("2026-10-12T00:00:00+02:00"), priority: "none", notes: nil, completed: false)
         check(sortReminders([a, b, c]).map(\.title) == ["c", "b", "a"], "sortReminders by due, undated last")
 
+        check((try? fetchedOrError([1, 2], kind: "Erinnerungen")) == [1, 2], "fetchedOrError passes results")
+        check((try? fetchedOrError([Int](), kind: "Erinnerungen")) == [], "fetchedOrError keeps empty result")
+        throwsCode(1, "fetchedOrError rejects failed fetch") { _ = try fetchedOrError([Int]?.none, kind: "Erinnerungen") }
+
         check(helpText.contains("events") && helpText.contains("reminders") && helpText.contains("calendars"),
               "helpText lists commands")
     }
