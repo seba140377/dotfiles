@@ -19,6 +19,7 @@ name = "one-dark"
 # red = "#ff6188"
 # green = "#a6e3a1"
 
+auto_switch = false
 [terminal]
 # Executable used for new interactive panes.
 # Empty means $SHELL, then /bin/sh.
@@ -201,6 +202,7 @@ show_agent_labels_on_pane_borders = true
 # accent = "cyan"
 
 # Background notification popup delivery
+status_indicators = "dots"
 [ui.toast]
 # off = disable pop-up notifications
 # herdr = show top-right in-app toasts
@@ -209,6 +211,7 @@ show_agent_labels_on_pane_borders = true
 # delivery = "off"
 
 # Play sounds when agents change state in background workspaces
+delivery = "off"
 [ui.sound]
 # enabled = true
 # Optional custom mp3 sound files. Relative paths are resolved from this config file's directory.
