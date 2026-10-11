@@ -1,1 +1,1 @@
-alias clc='claude'
+alias cc='claude'
