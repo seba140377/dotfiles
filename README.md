@@ -114,6 +114,7 @@ dotfiles/
 ├── setup.sh              # Setup orchestration
 ├── mise.toml             # Repo-local mise config (installs pre-commit hooks on enter)
 ├── custom/               # install_<name>.sh scripts for tools not in brew/mise
+│   └── ekread/           # read-only EventKit CLI (calendars, reminders → JSON); test: custom/ekread/test.sh
 ├── zsh/.config/zsh/      # → ~/.config/zsh/
 ├── git/.gitconfig        # → ~/.gitconfig  (includes ~/.gitconfig.local)
 ├── git/.gitignore        # → ~/.gitignore  (global excludes)

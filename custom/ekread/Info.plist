@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleIdentifier</key>
+	<string>de.seba140377.ekread</string>
+	<key>CFBundleName</key>
+	<string>ekread</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>ekread liest Termine bzw. Erinnerungen für Claude Code (nur lesend).</string>
+	<key>NSRemindersFullAccessUsageDescription</key>
+	<string>ekread liest Termine bzw. Erinnerungen für Claude Code (nur lesend).</string>
+</dict>
+</plist>

@@ -26,6 +26,7 @@ brews:
 custom:
   - bash-commons
   - claude-code
+  - ekread
   - vault-mcp-server
 mise:
   - fd

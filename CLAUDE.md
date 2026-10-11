@@ -9,6 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 All package installations and stow operations are defined in `config.yml`:
 - `brews`: Homebrew formulas and casks to install (`cask: true` for casks)
 - `custom`: Custom tools requiring specialized installation scripts (located in `custom/install_<name>.sh`)
+  - `ekread`: own read-only EventKit CLI (sources in `custom/ekread/`), lists macOS calendar events and reminders as JSON for Claude Code. `install_ekread.sh` compiles it with `swiftc` into `~/.local/bin/ekread` (embedded `Info.plist` is required for the macOS access prompt); `custom/ekread/test.sh` runs the unit tests and CLI checks. Never add EventKit write calls (`save`/`remove`/`commit`/`reset`); the test fails on them.
 - `mise`: Development tools managed by mise (also duplicated in `mise/.config/mise/config.toml`)
 - `npm`: Global npm packages to install
 - `pip`: Global pip packages to install

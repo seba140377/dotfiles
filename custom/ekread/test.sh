@@ -10,3 +10,34 @@ trap 'rm -rf "$OUT"' EXIT
 echo "🔸 Unit tests"
 swiftc -swift-version 5 -parse-as-library Core.swift Tests.swift -o "$OUT/tests"
 "$OUT/tests"
+
+echo "🔸 CLI checks (no calendar access needed)"
+bash ../install_ekread.sh "$OUT/ekread" >/dev/null
+fails=0
+expect() { # expect <name> <exit> <stdout-pattern|-> <stderr-nonempty yes|no> -- cmd...
+  local name=$1 want=$2 pat=$3 errwant=$4; shift 5
+  local got=0
+  "$@" >"$OUT/stdout" 2>"$OUT/stderr" || got=$?
+  local ok=1
+  [ "$got" = "$want" ] || ok=0
+  if [ "$pat" != "-" ]; then grep -q -- "$pat" "$OUT/stdout" || ok=0; fi
+  if [ "$errwant" = yes ]; then [ -s "$OUT/stderr" ] && [ ! -s "$OUT/stdout" ] || ok=0; fi
+  if [ $ok = 1 ]; then echo "ok   $name"; else echo "FAIL $name (exit $got)"; fails=$((fails + 1)); fi
+}
+expect "--help exits 0" 0 events no -- "$OUT/ekread" --help
+expect "invalid date exits 1" 1 - yes -- "$OUT/ekread" events --from 2026-02-30
+expect "unknown command exits 1" 1 - yes -- "$OUT/ekread" foo
+
+if grep -nE '\.(save|remove|commit|reset)\(' main.swift Core.swift; then
+  echo "FAIL read-only: write call found"; fails=$((fails + 1))
+else
+  echo "ok   read-only: no EventKit write calls"
+fi
+if [ -n "$(otool -s __TEXT __info_plist "$OUT/ekread" | sed 1d)" ]; then
+  echo "ok   Info.plist embedded"
+else
+  echo "FAIL Info.plist not embedded"; fails=$((fails + 1))
+fi
+
+[ "$fails" = 0 ] || { echo "$fails CLI check(s) failed"; exit 1; }
+echo "CLI checks passed"
