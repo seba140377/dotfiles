@@ -65,6 +65,10 @@ mise:
 npm:
   - oclif
   - openwiki
+  # Optional OpenWiki peers for Mermaid validation that matches GitHub;
+  # majors pinned to the peer ranges of openwiki (mermaid ^11.16, jsdom ^29 || ^30)
+  - mermaid@11
+  - jsdom@30
 pip: []
 claude:
   # GitHub repos (owner/repo) that provide a Claude Code plugin marketplace
