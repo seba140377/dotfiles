@@ -154,10 +154,25 @@ log_keeps_30_runs() {
   for _ in $(seq 35); do run heute; done
   check "30 runs kept" [ "$(grep -c '^=== ' "$T/log")" = 30 ]
 }
+install_copies_files() {
+  local plist="$T/agents/de.seba140377.tagesplanung.plist" rc=0
+  TP_NO_LAUNCHCTL=1 bash "$HERE/../install_tagesplanung.sh" "$T/inst" "$T/agents" >/dev/null 2>&1 || rc=$?
+  check "exit 0" [ "$rc" = 0 ]
+  check "wrapper executable" [ -x "$T/inst/tagesplanung-run" ]
+  check "plist lint" plutil -lint -s "$plist"
+  check "program path" [ "$(plutil -extract ProgramArguments.0 raw "$plist" 2>/dev/null)" = "$T/inst/tagesplanung-run" ]
+  check "hour 20" [ "$(plutil -extract StartCalendarInterval.Hour raw "$plist" 2>/dev/null)" = 20 ]
+  check "minute 0" [ "$(plutil -extract StartCalendarInterval.Minute raw "$plist" 2>/dev/null)" = 0 ]
+  check "log path" [ "$(plutil -extract StandardOutPath raw "$plist" 2>/dev/null)" = "$HOME/Library/Logs/tagesplanung.log" ]
+  rc=0
+  TP_NO_LAUNCHCTL=1 bash "$HERE/../install_tagesplanung.sh" "$T/inst" "$T/agents" >/dev/null 2>&1 || rc=$?
+  check "idempotent" [ "$rc" = 0 ]
+}
 
 for c in invalid_mode ekread_denied ekread_error explicit_heute_ok weekday_evening_morgen \
   sunday_evening_both catchup_morning_heute catchup_morning_monday_week missing_file_fails \
-  stale_file_fails morgen_fails_week_still_runs timeout_kills_claude log_keeps_30_runs; do
+  stale_file_fails morgen_fails_week_still_runs timeout_kills_claude log_keeps_30_runs \
+  install_copies_files; do
   t "$c" "$c"
 done
 

@@ -27,6 +27,7 @@ custom:
   - bash-commons
   - claude-code
   - ekread
+  - tagesplanung
   - vault-mcp-server
 mise:
   - fd
