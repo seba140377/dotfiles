@@ -30,20 +30,30 @@ EOF
 echo "$1" >>"$STUB_DIR/notify.txt"
 EOF
   # claude stub: records its arguments; writes the plan file named by
-  # STUB_FILE_<mode> with `generated: $STUB_GEN` unless STUB_CLAUDE says otherwise
+  # STUB_FILE_<mode> with `generated: $STUB_GEN` (plus `status: $STUB_STATUS`
+  # and the body $STUB_BODY when set) unless STUB_CLAUDE says otherwise.
+  # Mode is `rueckblick` for /wochenrueckblick, else the second prompt word.
   cat >"$T/bin/claude" <<'EOF'
 #!/bin/bash
 echo "$*" >>"$STUB_DIR/calls.txt"
-mode=$(echo "$2" | awk '{print $2}')
+case "$2" in
+  /wochenrueckblick*) mode=rueckblick ;;
+  *) mode=$(echo "$2" | awk '{print $2}') ;;
+esac
 case "${STUB_CLAUDE:-write}" in
   none) exit 0 ;;
   sleep) sleep 5; exit 0 ;;
   fail) exit 1 ;;
   fail-morgen) [ "$mode" = morgen ] && exit 1 ;;
+  fail-rueckblick) [ "$mode" = rueckblick ] && exit 1 ;;
 esac
 var="STUB_FILE_$mode"
 if [ -n "${!var:-}" ]; then
-  printf -- '---\ngenerated: %sT%s\n---\n' "$STUB_GEN" "${STUB_TIME:-20:00}" >"plans/${!var}"
+  {
+    printf -- '---\ngenerated: %sT%s\n' "$STUB_GEN" "${STUB_TIME:-20:00}"
+    [ -n "${STUB_STATUS:-}" ] && printf 'status: %s\n' "$STUB_STATUS"
+    printf -- '---\n%b' "${STUB_BODY:-}"
+  } >"plans/${!var}"
 fi
 exit 0
 EOF
@@ -105,14 +115,81 @@ weekday_evening_morgen() {
   check "morgen" call_n_has 1 "/tagesplanung morgen --routine"
 }
 sunday_evening_both() {
-  export TP_NOW="2026-10-11 20:00" STUB_GEN=2026-10-11 \
-    STUB_FILE_morgen="2026-10-12 Tagesplan.md" STUB_FILE_woche="2026-W42 Wochenplan.md"
+  export TP_NOW="2026-10-18 20:00" STUB_GEN=2026-10-18 STUB_STATUS=entwurf \
+    STUB_FILE_morgen="2026-10-19 Tagesplan.md" STUB_FILE_woche="2026-W43 Wochenplan.md" \
+    STUB_FILE_rueckblick="2026-W42 Wochenrückblick.md"
   run
   check "exit 0" exit_is 0
-  check "two calls" call_count 2
+  check "three calls" call_count 3
   check "morgen first" call_n_has 1 "/tagesplanung morgen --routine"
-  check "woche second" call_n_has 2 "/tagesplanung woche --routine"
-  check "notify KW" notified "Wochenplan KW 42 bereit"
+  check "rueckblick second" call_n_has 2 "/wochenrueckblick --routine"
+  check "woche third" call_n_has 3 "/tagesplanung woche --routine"
+  check "notify KW" notified "Wochenplan KW 43 bereit"
+  check "notify review" notified "Wochenrückblick KW 42 bereit"
+}
+monday_catchup_order() {
+  export TP_NOW="2026-10-19 07:00" STUB_GEN=2026-10-19 STUB_STATUS=entwurf \
+    STUB_FILE_heute="2026-10-19 Tagesplan.md" STUB_FILE_woche="2026-W43 Wochenplan.md" \
+    STUB_FILE_rueckblick="2026-W42 Wochenrückblick.md"
+  run
+  check "exit 0" exit_is 0
+  check "three calls" call_count 3
+  check "heute first" call_n_has 1 "/tagesplanung heute --routine"
+  check "rueckblick second" call_n_has 2 "/wochenrueckblick --routine"
+  check "woche third" call_n_has 3 "/tagesplanung woche --routine"
+  check "notify previous week" notified "Wochenrückblick KW 42 bereit"
+}
+explicit_rueckblick() {
+  export TP_NOW="2026-10-18 20:00" STUB_GEN=2026-10-18 STUB_STATUS=entwurf \
+    STUB_FILE_rueckblick="2026-W42 Wochenrückblick.md"
+  run rueckblick
+  check "exit 0" exit_is 0
+  check "one call" call_count 1
+  check "prompt" call_n_has 1 "/wochenrueckblick --routine"
+}
+rueckblick_fails_week_still_runs() {
+  export TP_NOW="2026-10-18 20:00" STUB_GEN=2026-10-18 STUB_CLAUDE=fail-rueckblick \
+    STUB_FILE_morgen="2026-10-19 Tagesplan.md" STUB_FILE_woche="2026-W43 Wochenplan.md" \
+    STUB_FILE_rueckblick="2026-W42 Wochenrückblick.md"
+  run
+  check "exit 1" exit_is 1
+  check "woche attempted" call_n_has 3 "/tagesplanung woche --routine"
+  check "notify fehlgeschlagen" notified "(rueckblick) fehlgeschlagen"
+}
+decided_review_is_success() {
+  export TP_NOW="2026-10-18 20:00" STUB_CLAUDE=none
+  printf -- '---\nstatus: entschieden\ngenerated: 2026-10-18T09:00\n---\n' \
+    >"$T/vault/plans/2026-W42 Wochenrückblick.md"
+  run rueckblick
+  check "exit 0" exit_is 0
+  check "notify bereits entschieden" notified "Wochenrückblick KW 42 bereits entschieden"
+  check "file untouched" grep -q "generated: 2026-10-18T09:00" "$T/vault/plans/2026-W42 Wochenrückblick.md"
+}
+draft_review_stale_fails() {
+  export TP_NOW="2026-10-18 20:00" STUB_CLAUDE=none
+  printf -- '---\nstatus: entwurf\ngenerated: 2026-10-18T09:00\n---\n' \
+    >"$T/vault/plans/2026-W42 Wochenrückblick.md"
+  run rueckblick
+  check "exit 1" exit_is 1
+}
+review_count_in_notice() {
+  export TP_NOW="2026-10-18 20:00" STUB_GEN=2026-10-18 STUB_STATUS=entwurf \
+    STUB_FILE_rueckblick="2026-W42 Wochenrückblick.md" \
+    STUB_BODY='## Erledigt\n1. x\n\n## Zu entscheiden\n1. a\n2. b\n\n<!-- Entscheidungen -->\n## Entscheidungen\n1. c\n'
+  run rueckblick
+  check "exit 0" exit_is 0
+  check "count" notified "Wochenrückblick KW 42 bereit (2 zu entscheiden)"
+}
+review_tools() {
+  export TP_NOW="2026-10-18 20:00" STUB_GEN=2026-10-18 STUB_STATUS=entwurf \
+    STUB_FILE_morgen="2026-10-19 Tagesplan.md" STUB_FILE_woche="2026-W43 Wochenplan.md" \
+    STUB_FILE_rueckblick="2026-W42 Wochenrückblick.md"
+  run
+  check "review without Gmail" call_n_lacks 2 "mcp__claude_ai_Gmail"
+  check "review with git-activity" call_n_has 2 "Bash(.claude/skills/wochenrueckblick/git-activity:"
+  check "review dontAsk" call_n_has 2 "--permission-mode dontAsk"
+  check "woche keeps Gmail" call_n_has 3 "mcp__claude_ai_Gmail"
+  check "woche without git-activity" call_n_lacks 3 "git-activity"
 }
 catchup_morning_heute() {
   export TP_NOW="2026-10-14 07:00" STUB_GEN=2026-10-14 STUB_FILE_heute="2026-10-14 Tagesplan.md"
@@ -123,12 +200,13 @@ catchup_morning_heute() {
 }
 catchup_morning_monday_week() {
   export TP_NOW="2026-10-12 07:00" STUB_GEN=2026-10-12 \
-    STUB_FILE_heute="2026-10-12 Tagesplan.md" STUB_FILE_woche="2026-W42 Wochenplan.md"
+    STUB_FILE_heute="2026-10-12 Tagesplan.md" STUB_FILE_woche="2026-W42 Wochenplan.md" \
+    STUB_FILE_rueckblick="2026-W41 Wochenrückblick.md"
   run
   check "exit 0" exit_is 0
-  check "two calls" call_count 2
+  check "three calls" call_count 3
   check "heute first" call_n_has 1 "/tagesplanung heute --routine"
-  check "woche second" call_n_has 2 "/tagesplanung woche --routine"
+  check "woche last" call_n_has 3 "/tagesplanung woche --routine"
 }
 missing_file_fails() {
   export TP_NOW="2026-10-14 20:00" STUB_CLAUDE=none
@@ -146,7 +224,7 @@ morgen_fails_week_still_runs() {
     STUB_FILE_morgen="2026-10-12 Tagesplan.md" STUB_FILE_woche="2026-W42 Wochenplan.md"
   run
   check "exit 1" exit_is 1
-  check "woche attempted" call_n_has 2 "/tagesplanung woche --routine"
+  check "woche attempted" call_n_has 3 "/tagesplanung woche --routine"
 }
 timeout_kills_claude() {
   export TP_NOW="2026-10-14 20:00" TP_TIMEOUT=1 STUB_CLAUDE=sleep
@@ -203,7 +281,8 @@ for c in invalid_mode ekread_denied ekread_error explicit_heute_ok weekday_eveni
   sunday_evening_both catchup_morning_heute catchup_morning_monday_week missing_file_fails \
   stale_file_fails morgen_fails_week_still_runs timeout_kills_claude log_keeps_30_runs \
   install_copies_files permissions_locked same_day_old_file_fails \
-  caffeinate_wraps_claude; do
+  caffeinate_wraps_claude monday_catchup_order explicit_rueckblick rueckblick_fails_week_still_runs \
+  decided_review_is_success draft_review_stale_fails review_count_in_notice review_tools; do
   t "$c" "$c"
 done
 

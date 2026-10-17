@@ -1,8 +1,10 @@
 #!/bin/bash
-# Runs the vault skill `tagesplanung` unattended via `claude -p` (launchd routine).
-# Usage: tagesplanung-run [heute|morgen|woche]
-#   no mode: from 12:00 `morgen` (+ `woche` on Sundays); before 12:00, i.e. a
-#   run launchd caught up after midnight, `heute` (+ `woche` on Mondays).
+# Runs the vault skills `tagesplanung` and `wochenrueckblick` unattended via
+# `claude -p` (launchd routine).
+# Usage: tagesplanung-run [heute|morgen|woche|rueckblick]
+#   no mode: from 12:00 `morgen` (+ `rueckblick`, `woche` on Sundays); before
+#   12:00, i.e. a run launchd caught up after midnight, `heute` (+ `rueckblick`,
+#   `woche` on Mondays). `rueckblick` reviews the week ending on the last Sunday.
 # Exit: 0 ok, 1 a run failed or invalid mode, 2 macOS access for ekread missing.
 # Overridable for tests: TP_VAULT TP_CLAUDE TP_NOTIFY TP_LOG TP_NOW ("YYYY-MM-DD HH:MM")
 #   TP_TIMEOUT (seconds per claude run) TP_PATH_PREFIX
@@ -29,6 +31,11 @@ TOOLS=(
   "Bash(git add:*)" "Bash(git diff:*)" "Bash(git commit:*)"
   "Bash(git push)" "Bash(git push origin main)"
 )
+# The weekly review reads no mail but runs the read-only git activity script.
+REVIEW_TOOLS=("Bash(.claude/skills/wochenrueckblick/git-activity:*)")
+for t in "${TOOLS[@]}"; do
+  [ "$t" = mcp__claude_ai_Gmail__search_threads ] || REVIEW_TOOLS+=("$t")
+done
 WEEKDAYS=(_ Montag Dienstag Mittwoch Donnerstag Freitag Samstag Sonntag)
 
 now="${TP_NOW:-$(date '+%F %H:%M')}"
@@ -64,43 +71,74 @@ plan_day() {
     heute) echo "$today" ;;
     morgen) day_offset "$today" +1 ;;
     woche) if [ "$dow" = 7 ]; then day_offset "$today" +1; else echo "$today"; fi ;;
+    rueckblick) if [ "$dow" = 1 ]; then day_offset "$today" -1; else echo "$today"; fi ;;
   esac
+}
+
+week_of() { date -j -f %F "$1" +%G-W%V; }
+week_number() { echo $((10#$(date -j -f %F "$1" +%V))); }
+
+prompt_for() {
+  if [ "$1" = rueckblick ]; then
+    echo "/wochenrueckblick --routine"
+  else
+    echo "/tagesplanung $1 --routine"
+  fi
 }
 
 target_file() {
   local d
   d=$(plan_day "$1")
   if [ "$1" = woche ]; then
-    echo "plans/$(date -j -f %F "$d" +%G-W%V) Wochenplan.md"
+    echo "plans/$(week_of "$d") Wochenplan.md"
+  elif [ "$1" = rueckblick ]; then
+    echo "plans/$(week_of "$d") Wochenrückblick.md"
   else
     echo "plans/$d Tagesplan.md"
   fi
+}
+
+# open_items <file>: numbered items in the review's "Zu entscheiden" section
+open_items() {
+  awk '/^## Zu entscheiden/ { on = 1; next }
+       on && (/^## / || /^<!--/) { on = 0 }
+       on && /^[0-9]+\. / { n++ }
+       END { print n + 0 }' "$1"
 }
 
 success_message() {
   local d
   d=$(plan_day "$1")
   if [ "$1" = woche ]; then
-    echo "Wochenplan KW $((10#$(date -j -f %F "$d" +%V))) bereit"
+    echo "Wochenplan KW $(week_number "$d") bereit"
+  elif [ "$1" = rueckblick ]; then
+    echo "Wochenrückblick KW $(week_number "$d") bereit ($(open_items "$(target_file rueckblick)") zu entscheiden)"
   else
     echo "Tagesplan für ${WEEKDAYS[$(date -j -f %F "$d" +%u)]}, $(date -j -f %F "$d" +%d.%m.) bereit"
   fi
 }
 
-# run_mode <mode>: one claude run; 0 if it (re)generated the plan file
+# run_mode <mode>: one claude run; 0 if it (re)generated the plan file, or
+# left a review alone that the owner already decided
 run_mode() {
   local mode=$1 file gen rc=0
+  local tools=("${TOOLS[@]}")
+  [ "$mode" = rueckblick ] && tools=("${REVIEW_TOOLS[@]}")
   file=$(target_file "$mode")
   echo "=== $(date '+%F %T') $mode ===" >>"$TP_LOG"
   # caffeinate: launchd may start the run in a short dark wake; without an
   # assertion macOS sleeps again mid-run and connections go stale
   caffeinate -i perl -e 'alarm shift; exec @ARGV' "$TP_TIMEOUT" \
-    "$TP_CLAUDE" -p "/tagesplanung $mode --routine" \
-    --permission-mode dontAsk --allowedTools "${TOOLS[@]}" \
+    "$TP_CLAUDE" -p "$(prompt_for "$mode")" \
+    --permission-mode dontAsk --allowedTools "${tools[@]}" \
     >>"$TP_LOG" 2>&1 || rc=$?
   gen=$(sed -n 's/^generated: //p' "$file" 2>/dev/null | head -1)
   if [ "$rc" = 0 ] && [ -n "$gen" ] && ! [[ "$gen" < "$started" ]]; then
     notify "$(success_message "$mode")"
+    return 0
+  fi
+  if [ "$rc" = 0 ] && [ "$mode" = rueckblick ] && grep -qx 'status: entschieden' "$file" 2>/dev/null; then
+    notify "Wochenrückblick KW $(week_number "$(plan_day rueckblick)") bereits entschieden"
     return 0
   fi
   echo "tagesplanung-run: $mode failed (exit $rc, file: $file)" >>"$TP_LOG"
@@ -110,13 +148,13 @@ run_mode() {
 
 if [ $# -gt 0 ]; then
   case "$1" in
-    heute | morgen | woche) modes=("$1") ;;
-    *) echo "usage: tagesplanung-run [heute|morgen|woche]" >&2; exit 1 ;;
+    heute | morgen | woche | rueckblick) modes=("$1") ;;
+    *) echo "usage: tagesplanung-run [heute|morgen|woche|rueckblick]" >&2; exit 1 ;;
   esac
 elif [ "$hour" -lt 12 ]; then
-  modes=(heute); [ "$dow" = 1 ] && modes+=(woche)
+  modes=(heute); [ "$dow" = 1 ] && modes+=(rueckblick woche)
 else
-  modes=(morgen); [ "$dow" = 7 ] && modes+=(woche)
+  modes=(morgen); [ "$dow" = 7 ] && modes+=(rueckblick woche)
 fi
 
 mkdir -p "$(dirname "$TP_LOG")"
