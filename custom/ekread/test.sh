@@ -50,6 +50,7 @@ else
 fi
 # Child runs (after re-spawn) must report their own exit code and stderr.
 expect "child error propagates" 1 - yes -- "$OUT/ekread" reminders --due-before 2026-02-30
+expect "--completed-since invalid date exits 1" 1 - yes -- "$OUT/ekread" reminders --completed-since 2026-02-30
 if nm -u "$OUT/ekread" | grep -q '_responsibility_spawnattrs_setdisclaim'; then
   echo "ok   re-spawns itself with disclaimed responsibility"
 else

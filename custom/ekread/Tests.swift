@@ -92,10 +92,15 @@ struct Tests {
         check((try? args(["events", "--from", "today", "--calendar", "A", "--calendar", "B"]))
               == .events(from: "today", to: nil, calendars: ["A", "B"]), "parseArgs events repeated --calendar")
         check((try? args(["events", "--to", "+3d"])) == .events(from: nil, to: "+3d", calendars: []), "parseArgs events --to")
-        check((try? args(["reminders"])) == .reminders(lists: [], dueBefore: nil, includeCompleted: false),
+        check((try? args(["reminders"])) == .reminders(lists: [], dueBefore: nil, includeCompleted: false, completedSince: nil),
               "parseArgs reminders defaults")
         check((try? args(["reminders", "--include-completed", "--list", "X", "--due-before", "tomorrow"]))
-              == .reminders(lists: ["X"], dueBefore: "tomorrow", includeCompleted: true), "parseArgs reminders options")
+              == .reminders(lists: ["X"], dueBefore: "tomorrow", includeCompleted: true, completedSince: nil),
+              "parseArgs reminders options")
+        check((try? args(["reminders", "--completed-since", "2026-10-12"]))
+              == .reminders(lists: [], dueBefore: nil, includeCompleted: true, completedSince: "2026-10-12"),
+              "parseArgs reminders --completed-since implies --include-completed")
+        throwsCode(1, "--completed-since needs value") { _ = try args(["reminders", "--completed-since"]) }
         throwsCode(1, "parseArgs rejects unknown command") { _ = try args(["foo"]) }
         throwsCode(1, "parseArgs rejects unknown option") { _ = try args(["events", "--bogus"]) }
         throwsCode(1, "parseArgs rejects missing value") { _ = try args(["events", "--from"]) }
@@ -127,14 +132,27 @@ struct Tests {
         check((try? encodeJSON([EventOut](), timeZone: tz)) == "[\n\n]" || (try? encodeJSON([EventOut](), timeZone: tz)) == "[]",
               "encodeJSON empty is []")
 
-        let rem = ReminderOut(title: "Müll", list: "Haushalt", due: nil, priority: "none", notes: nil, completed: false)
+        let rem = ReminderOut(title: "Müll", list: "Haushalt", due: nil, priority: "none", notes: nil, completed: false, completedAt: nil)
         let rjson = (try? encodeJSON([rem], timeZone: tz)) ?? ""
         check(rjson.contains("\"due\" : null"), "encodeJSON writes null for missing due")
 
-        let a = ReminderOut(title: "a", list: "L", due: nil, priority: "none", notes: nil, completed: false)
-        let b = ReminderOut(title: "b", list: "L", due: at("2026-10-13T00:00:00+02:00"), priority: "none", notes: nil, completed: false)
-        let c = ReminderOut(title: "c", list: "L", due: at("2026-10-12T00:00:00+02:00"), priority: "none", notes: nil, completed: false)
+        let a = ReminderOut(title: "a", list: "L", due: nil, priority: "none", notes: nil, completed: false, completedAt: nil)
+        let b = ReminderOut(title: "b", list: "L", due: at("2026-10-13T00:00:00+02:00"), priority: "none", notes: nil, completed: false, completedAt: nil)
+        let c = ReminderOut(title: "c", list: "L", due: at("2026-10-12T00:00:00+02:00"), priority: "none", notes: nil, completed: false, completedAt: nil)
         check(sortReminders([a, b, c]).map(\.title) == ["c", "b", "a"], "sortReminders by due, undated last")
+        check(rjson.contains("\"completed_at\" : null"), "encodeJSON writes null for missing completed_at")
+
+        func done(_ t: String, _ at: Date?, completed: Bool = true) -> ReminderOut {
+            ReminderOut(title: t, list: "L", due: nil, priority: "none", notes: nil, completed: completed, completedAt: at)
+        }
+        let since = at("2026-10-12T00:00:00+02:00")
+        let kept = filterCompletedSince([done("edge", since), done("before", at("2026-10-11T23:59:00+02:00"))], since: since)
+        check(kept.map(\.title) == ["edge"], "filterCompletedSince keeps since instant, drops earlier")
+        check(filterCompletedSince([done("nil", nil)], since: since).isEmpty, "filterCompletedSince drops nil")
+        check(filterCompletedSince([done("open", since, completed: false)], since: since).isEmpty,
+              "filterCompletedSince drops open reminders")
+        let cjson = (try? encodeJSON([done("x", at("2026-10-14T18:20:00+02:00"))], timeZone: tz)) ?? ""
+        check(cjson.contains("\"completed_at\" : \"2026-10-14T18:20:00+02:00\""), "encodeJSON writes completed_at as ISO date")
 
         check((try? fetchedOrError([1, 2], kind: "Erinnerungen")) == [1, 2], "fetchedOrError passes results")
         check((try? fetchedOrError([Int](), kind: "Erinnerungen")) == [], "fetchedOrError keeps empty result")

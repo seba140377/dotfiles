@@ -75,8 +75,11 @@ func fail(_ e: CLIError) -> Never {
     try output(events)
 }
 
-@MainActor func listReminders(lists: [String], dueBefore: String?, includeCompleted: Bool) async throws {
+@MainActor func listReminders(
+    lists: [String], dueBefore: String?, includeCompleted: Bool, completedSince: String?
+) async throws {
     let before = try dueBefore.map { try parseDay($0, now: Date(), calendar: calendar) }
+    let since = try completedSince.map { try parseDay($0, now: Date(), calendar: calendar) }
     try await requireAccess(.reminder)
     let cals = try selectByName(store.calendars(for: .reminder), names: lists, kind: "Liste") { $0.title }
     let scope = lists.isEmpty ? nil : cals
@@ -91,10 +94,12 @@ func fail(_ e: CLIError) -> Never {
         let due = r.dueDateComponents.flatMap { ($0.calendar ?? calendar).date(from: $0) }
         return ReminderOut(
             title: r.title ?? "", list: r.calendar.title, due: due,
-            priority: priorityLabel(r.priority), notes: r.notes, completed: r.isCompleted)
+            priority: priorityLabel(r.priority), notes: r.notes, completed: r.isCompleted,
+            completedAt: r.completionDate)
     }
     // predicateForReminders(in:) ignores the due date, so filter here too.
     if let before { reminders = reminders.filter { ($0.due.map { $0 < before }) ?? false } }
+    if let since { reminders = filterCompletedSince(reminders, since: since) }
     try output(sortReminders(reminders))
 }
 
@@ -145,8 +150,9 @@ do {
         try await listCalendars()
     case let .events(from, to, names):
         try await listEvents(from: from, to: to, names: names)
-    case let .reminders(lists, dueBefore, includeCompleted):
-        try await listReminders(lists: lists, dueBefore: dueBefore, includeCompleted: includeCompleted)
+    case let .reminders(lists, dueBefore, includeCompleted, completedSince):
+        try await listReminders(
+            lists: lists, dueBefore: dueBefore, includeCompleted: includeCompleted, completedSince: completedSince)
     }
 } catch let e as CLIError {
     fail(e)

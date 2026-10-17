@@ -68,7 +68,7 @@ enum Command: Equatable {
     case help
     case calendars
     case events(from: String?, to: String?, calendars: [String])
-    case reminders(lists: [String], dueBefore: String?, includeCompleted: Bool)
+    case reminders(lists: [String], dueBefore: String?, includeCompleted: Bool, completedSince: String?)
 }
 
 /// Parses the arguments after the program name. Empty means help.
@@ -103,17 +103,20 @@ func parseArgs(_ args: [String]) throws -> Command {
         }
         return .events(from: from, to: to, calendars: cals)
     case "reminders":
-        var lists: [String] = [], due: String?, completed = false
+        var lists: [String] = [], due: String?, completed = false, since: String?
         while !rest.isEmpty {
             let opt = rest.removeFirst()
             switch opt {
             case "--list": lists.append(try value(for: opt))
             case "--due-before": due = try value(for: opt)
             case "--include-completed": completed = true
+            case "--completed-since":
+                since = try value(for: opt)
+                completed = true
             default: throw usage("Unbekannte Option für reminders: \(opt)")
             }
         }
-        return .reminders(lists: lists, dueBefore: due, includeCompleted: completed)
+        return .reminders(lists: lists, dueBefore: due, includeCompleted: completed, completedSince: since)
     default:
         throw usage("Unbekannter Befehl: \(cmd)")
     }
@@ -200,9 +203,10 @@ struct ReminderOut: Encodable {
     let priority: String
     let notes: String?
     let completed: Bool
+    let completedAt: Date?
 
     enum CodingKeys: String, CodingKey {
-        case title, list, due, priority, notes, completed
+        case title, list, due, priority, notes, completed, completedAt = "completed_at"
     }
 
     func encode(to encoder: Encoder) throws {
@@ -213,7 +217,14 @@ struct ReminderOut: Encodable {
         try c.encode(priority, forKey: .priority)
         try c.encode(notes, forKey: .notes)
         try c.encode(completed, forKey: .completed)
+        try c.encode(completedAt, forKey: .completedAt)
     }
+}
+
+/// Completed reminders with a completion date at or after `since`; a missing
+/// completion date never matches.
+func filterCompletedSince(_ r: [ReminderOut], since: Date) -> [ReminderOut] {
+    r.filter { $0.completed && ($0.completedAt.map { $0 >= since } ?? false) }
 }
 
 /// Sorts by due date, undated reminders last, ties by title.
@@ -250,9 +261,10 @@ Befehle:
   ekread events [--from D] [--to D] [--calendar NAME ...]
       Termine im Zeitfenster [from, to). Standard: heute 00:00 bis morgen 00:00.
       Nur --from: genau dieser Tag. Nur --to: ab heute.
-  ekread reminders [--list NAME ...] [--due-before D] [--include-completed]
+  ekread reminders [--list NAME ...] [--due-before D] [--include-completed] [--completed-since D]
       Standard: alle offenen Erinnerungen, auch ohne Fälligkeit.
       --due-before: nur Erinnerungen mit Fälligkeit vor D.
+      --completed-since: nur ab D erledigte Erinnerungen (schließt --include-completed ein).
 
 D: YYYY-MM-DD, today, tomorrow oder +Nd (N Tage ab heute), jeweils 00:00 Ortszeit.
 --calendar und --list sind wiederholbar und vergleichen den Namen exakt.
