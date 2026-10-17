@@ -18,6 +18,13 @@ new_case() {
 #!/bin/bash
 exit "${STUB_EKREAD:-0}"
 EOF
+  # caffeinate stub: records its arguments, then runs the wrapped command
+  cat >"$T/bin/caffeinate" <<'EOF'
+#!/bin/bash
+echo "$*" >>"$STUB_DIR/caffeinate.txt"
+shift
+exec "$@"
+EOF
   cat >"$T/bin/notify" <<'EOF'
 #!/bin/bash
 echo "$1" >>"$STUB_DIR/notify.txt"
@@ -177,6 +184,13 @@ permissions_locked() {
   check "no open git push" call_n_lacks 1 "git push:"
   check "push origin main" call_n_has 1 "Bash(git push origin main)"
 }
+caffeinate_wraps_claude() {
+  export TP_NOW="2026-10-14 20:00" STUB_GEN=2026-10-14 STUB_FILE_heute="2026-10-14 Tagesplan.md"
+  run heute
+  check "exit 0" exit_is 0
+  check "caffeinate -i" grep -q -- "^-i " "$T/caffeinate.txt"
+  check "wraps claude run" grep -q -- "/tagesplanung heute --routine" "$T/caffeinate.txt"
+}
 same_day_old_file_fails() {
   export TP_NOW="2026-10-14 20:00" STUB_CLAUDE=none
   printf -- '---\ngenerated: 2026-10-14T15:00\n---\n' >"$T/vault/plans/2026-10-14 Tagesplan.md"
@@ -188,7 +202,8 @@ same_day_old_file_fails() {
 for c in invalid_mode ekread_denied ekread_error explicit_heute_ok weekday_evening_morgen \
   sunday_evening_both catchup_morning_heute catchup_morning_monday_week missing_file_fails \
   stale_file_fails morgen_fails_week_still_runs timeout_kills_claude log_keeps_30_runs \
-  install_copies_files permissions_locked same_day_old_file_fails; do
+  install_copies_files permissions_locked same_day_old_file_fails \
+  caffeinate_wraps_claude; do
   t "$c" "$c"
 done
 

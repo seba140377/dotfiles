@@ -92,7 +92,9 @@ run_mode() {
   local mode=$1 file gen rc=0
   file=$(target_file "$mode")
   echo "=== $(date '+%F %T') $mode ===" >>"$TP_LOG"
-  perl -e 'alarm shift; exec @ARGV' "$TP_TIMEOUT" \
+  # caffeinate: launchd may start the run in a short dark wake; without an
+  # assertion macOS sleeps again mid-run and connections go stale
+  caffeinate -i perl -e 'alarm shift; exec @ARGV' "$TP_TIMEOUT" \
     "$TP_CLAUDE" -p "/tagesplanung $mode --routine" \
     --permission-mode dontAsk --allowedTools "${TOOLS[@]}" \
     >>"$TP_LOG" 2>&1 || rc=$?
