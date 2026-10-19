@@ -7,9 +7,9 @@
     "files.autoSave": "afterDelay",
     "editor.inlineSuggest.enabled": true,
     "github.copilot.enable": {
-        "*": true,
+        "*": false,
         "plaintext": true,
-        "markdown": true,
+        "markdown": false,
         "scminput": false,
         "yaml": true
     },
@@ -128,4 +128,7 @@
     // herdr: pass right-click (context menu) through to the terminal app
     "terminal.integrated.rightClickBehavior": "nothing",
     "task.allowAutomaticTasks": "on",
+    "workbench.diffEditorAssociations": {
+        "*.md": "default"
+    },
 }
