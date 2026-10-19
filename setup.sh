@@ -136,17 +136,27 @@ install_mise_tools() {
   $HOME/.local/bin/mise install
 }
 
+# Installs global npm packages as specified in config.yml
+# - Writes them to ~/.default-npm-packages, which mise installs into every Node
+#   version it installs from now on (e.g. a version pinned by a project)
+# - Installs them into every Node version mise has already installed, not only
+#   the global one, so tools like openwiki also work in projects that pin another version
 install_global_npm_packages() {
   # Read npm packages from config.yml
   NPM_PACKAGES=$(yq -r '.npm[]' "$CONFIG_FILE" | tr '\n' ' ')
+  NODE_VERSIONS=$($HOME/.local/bin/mise ls --installed node --json | yq -p json -r '.[].version' | tr '\n' ' ')
 
   echo ""
   echo "🔸 Installing global npm packages..."
 
-  for pkg in $NPM_PACKAGES; do
-    echo "   Installing: $pkg ..."
+  yq -r '.npm[]' "$CONFIG_FILE" > "$HOME/.default-npm-packages"
 
-    npm install --global "$pkg" > /dev/null 2>&1
+  for version in $NODE_VERSIONS; do
+    for pkg in $NPM_PACKAGES; do
+      echo "   Installing: $pkg (node@$version) ..."
+
+      $HOME/.local/bin/mise exec "node@$version" -- npm install --global "$pkg" > /dev/null 2>&1
+    done
   done
 }
 

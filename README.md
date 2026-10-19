@@ -73,7 +73,7 @@ cd ~/projects/seba140377/src/dotfiles
 2. Ask for your name and email (stored in `~/.user_details`)
 3. Install Homebrew formulas/casks, custom tools and mise tools
 4. Add Claude Code plugin marketplaces, install plugins, configure the statusline and permission deny rules
-5. Install global npm and pip packages
+5. Install global npm packages (into every installed mise Node version, and via `~/.default-npm-packages` into every future one) and pip packages
 6. Stow all dotfiles and write `~/.gitconfig.local`
 
 > [!WARNING]
