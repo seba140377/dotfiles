@@ -113,7 +113,7 @@
     "chat.mcp.autostart": "never",
     "editor.accessibilitySupport": "off",
     "notes.notesLocation": "/Users/seba/projects/sflab/notes",
-    "mise.configureExtensionsAutomatically": true,
+    "mise.configureExtensionsAutomatically": false,
     "chat.viewSessions.orientation": "stacked",
     "git.detectWorktrees": true,
     "yaml.disableSchemaDetection": [
