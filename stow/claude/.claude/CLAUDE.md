@@ -34,8 +34,8 @@ process in it.
 A **worktree session** is a fresh Claude Code session that executes a finished
 superpowers plan in its own git worktree. The global task
 `mise run worktree:add` creates the worktree with its own herdr workspace (left
-pane: the owner's shell, right pane: the agent), starts Claude Code in the
-right pane and hands it the plan. It applies when `HERDR_ENV=1`.
+pane: the agent, right pane: the owner's shell), starts Claude Code in the
+left pane and hands it the plan. It applies when `HERDR_ENV=1`.
 
 **Planning session.** At the execution choice of `superpowers:writing-plans`,
 offer a third option next to Subagent-driven and Native: *Worktree session*,

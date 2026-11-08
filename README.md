@@ -155,7 +155,7 @@ Stowed to `~/.config/mise/tasks/` and available everywhere via `mise run <task>`
 | `python:install-requirements` | Install `requirements.txt` via `uv pip install` |
 | `secrets:show [file]` | Show a decrypted SOPS file (default `.creds.env.yaml`) |
 | `secrets:edit [file]` | Edit a SOPS file (default `.creds.env.yaml`) |
-| `worktree:add <branch> [--open] [--carry <file>]… [--agent <prompt>]` | Create a git worktree at `<repo>.worktrees/<branch>` (`/` → `-`), add `<repo>.worktrees` to the VS Code workspace in `~/.config/vscode/` that contains the repo, open it in herdr; `--open` also opens a VS Code window, `--carry` moves untracked files (plan, spec) into the worktree, `--agent` starts Claude Code in the right herdr pane with that prompt |
+| `worktree:add <branch> [--open] [--carry <file>]… [--agent <prompt>]` | Create a git worktree at `<repo>.worktrees/<branch>` (`/` → `-`), add `<repo>.worktrees` to the VS Code workspace in `~/.config/vscode/` that contains the repo, open it in herdr; `--open` also opens a VS Code window, `--carry` moves untracked files (plan, spec) into the worktree, `--agent` starts Claude Code in the left herdr pane with that prompt |
 | `worktree:finish [branch]` | Merge the branch into `main` (`--no-ff`, no push), delete branch and worktree; after the last one, drop `<repo>.worktrees` from the workspace |
 
 SOPS uses the age key at `~/.config/mise/age.txt` (configured in `stow/mise/.config/mise/config.toml`).
