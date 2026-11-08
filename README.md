@@ -26,7 +26,7 @@ A single `config.yml` lists every package, tool and dotfile set; `setup.sh` turn
 | --- | --- |
 | Shell | zsh (XDG layout, no plugin manager), [starship](https://starship.rs), [atuin](https://atuin.sh), fzf, zoxide, eza, bat, ripgrep, fd |
 | Terminal & editor | [WezTerm](https://wezterm.org), [zellij](https://zellij.dev), [herdr](https://herdr.dev), [Neovim](https://neovim.io) ([LazyVim](https://www.lazyvim.org)) |
-| Dev runtimes | mise, Node (LTS), pnpm, Python 3.12, pre-commit, gitleaks |
+| Dev runtimes | mise, Node (LTS), Python 3.14, pre-commit, gitleaks |
 | Kubernetes | kubectl, kubectx/kubens, helm, kustomize, flux2, flux-operator, kubeconform, k9s, Headlamp |
 | Secrets | sops, age, vault, gnupg |
 | Other | OrbStack, GitHub CLI, glab, restic, [Claude Code](https://claude.com/claude-code) + plugins |
