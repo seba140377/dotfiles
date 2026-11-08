@@ -13,20 +13,36 @@ file per topic. `<timestamp>` is the local creation time as `YYYYMMDD-HHMMSS`
 by filename lists the handoffs oldest first. Never overwrite existing files
 there.
 
-## Worktree session (herdr)
+## Worktrees
+
+Create every git worktree with the global mise task
+`mise run worktree:add <branch>`, also where a skill
+(`superpowers:using-git-worktrees`) or `EnterWorktree` would place it
+elsewhere. Run it in the repository the work belongs to: the task acts on the
+git repository of the current directory, a repository nested inside another
+one included. It reports where the worktree lands (`<repo>.worktrees/<branch>`)
+and, inside herdr, opens it as its own herdr workspace. Pass `--open` (an
+extra VS Code window) only when the owner asks for it.
+
+`mise run worktree:finish <branch>` merges the branch into `main` (`--no-ff`,
+no push) and removes branch and worktree. Run it from the main checkout: from
+inside the worktree's herdr workspace, herdr closes that workspace with every
+process in it.
+
+### Worktree session (herdr)
 
 A **worktree session** is a fresh Claude Code session that executes a finished
-superpowers plan in its own git worktree, started in the right pane of that
-worktree's herdr workspace by the global task `mise run worktree:add`. It
-applies when `HERDR_ENV=1`.
+superpowers plan in its own git worktree. The global task
+`mise run worktree:add` creates the worktree with its own herdr workspace (left
+pane: the owner's shell, right pane: the agent), starts Claude Code in the
+right pane and hands it the plan. It applies when `HERDR_ENV=1`.
 
 **Planning session.** At the execution choice of `superpowers:writing-plans`,
 offer a third option next to Subagent-driven and Native: *Worktree session*,
 naming the branch you propose (`feat/<topic>`, `fix/<topic>`, …). When the
-owner picks it, or asks for a new Claude Code session in a herdr split pane to
-take over the execution, also settle the method the worktree session uses
-(Subagent-driven or Native, with your recommendation as writing-plans gives
-it). Then:
+owner picks it, or in any wording asks to hand the execution to a new session
+or agent, also settle the method the worktree session uses (Subagent-driven or
+Native, with your recommendation as writing-plans gives it). Then:
 
 1. Commit the changes to tracked files the work needs (the worktree starts
    from `HEAD`); untracked files (the plan, a spec not yet committed) travel
