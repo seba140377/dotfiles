@@ -26,7 +26,8 @@
     "git.autofetch": true,
     "workbench.editorAssociations": {
         "*.copilotmd": "vscode.markdown.preview.editor",
-        "*.jar": "default"
+        "*.jar": "default",
+        "*.md": "default"
     },
     "terminal.integrated.defaultProfile.linux": "zsh",
     "github.copilot.preferredAccount": "abes140377",
@@ -90,7 +91,6 @@
     },
     "chat.extensionUnification.enabled": true,
     "chat.agentSessionsViewLocation": "single-view",
-    "claudeCode.useTerminal": true,
     "excalidraw.theme": "auto",
     "workbench.iconTheme": "ayu",
     "mise.binPath": "/Users/seba/.local/bin/mise",
@@ -131,4 +131,6 @@
     "workbench.diffEditorAssociations": {
         "*.md": "default"
     },
+    "claudeCode.hideOnboarding": true,
+    "claudeCode.preferredLocation": "panel",
 }
