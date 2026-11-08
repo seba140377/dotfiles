@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 
-#MISE description="Create a git worktree at <repo>.worktrees/<branch> (VS Code layout), show it in the VS Code workspace and open it in herdr"
+#MISE description="Create a git worktree at <repo>.worktrees/<branch> (VS Code layout), show it in the VS Code workspace, open it in herdr, optionally hand it to Claude Code"
 #MISE tools={jq="1.8"}
 #USAGE arg "<branch>" help="Branch to check out; created from HEAD if it doesn't exist"
 #USAGE flag "-o --open" help="Also open the worktree in a new VS Code window"
+#USAGE flag "--carry <path>" var=#true help="Move an untracked file (plan, spec) into the worktree, same relative path"
+#USAGE flag "--agent <prompt>" help="Start Claude Code in the right herdr pane and submit this prompt (needs herdr)"
 # raw: redacted env vars (redact=true in a project) pipe task stdio, so gum finds no terminal.
 #MISE raw=true
 
@@ -24,14 +26,47 @@ main_root=$(git worktree list --porcelain | sed -n '1s/^worktree //p')
 # Same layout as VS Code: sibling folder, slashes in the branch name become dashes.
 path="${main_root}.worktrees/${branch//\//-}"
 
-ui_header "worktree:add  $branch" "Creates the worktree $path."
+in_herdr=false
+[[ ${HERDR_ENV:-} == 1 ]] && command -v herdr >/dev/null && in_herdr=true
+
+header=("Creates the worktree $path.")
+[[ -z ${usage_agent:-} ]] || header+=("Then Claude Code takes over in its right herdr pane.")
+ui_header "worktree:add  $branch" "${header[@]}"
 [[ ! -e $path ]] || ui_die "$path already exists."
+[[ -z ${usage_agent:-} || $in_herdr == true ]] || ui_die "--agent needs a herdr session (HERDR_ENV=1)."
+
+# Check every --carry file before anything is created: an untracked file of the
+# calling checkout moves to the same relative path in the worktree; one that is
+# committed unchanged is in the worktree already.
+top=$(git rev-parse --show-toplevel)
+carry=()
+read -r -a carry_args <<<"${usage_carry:-}"
+for arg in ${carry_args[@]+"${carry_args[@]}"}; do
+  [[ $arg != \'* ]] || ui_die "--carry: paths with spaces are not supported ($arg)."
+  [[ -f $arg ]] || ui_die "--carry: $arg is not a file."
+  abs="$(cd "$(dirname "$arg")" && pwd -P)/$(basename "$arg")"
+  [[ $abs == "$top"/* ]] || ui_die "--carry: $arg is outside $top."
+  rel=${abs#"$top"/}
+  if git -C "$top" ls-files --error-unmatch -- "$rel" >/dev/null 2>&1; then
+    git -C "$top" diff --quiet HEAD -- "$rel" ||
+      ui_die "--carry: $rel has uncommitted changes; commit or stash it first."
+    ui_ok "$rel is committed; the worktree has it already"
+  else
+    carry+=("$rel")
+  fi
+done
 
 if git show-ref --verify --quiet "refs/heads/$branch"; then
   git worktree add "$path" "$branch"
 else
   git worktree add -b "$branch" "$path"
 fi
+
+for rel in ${carry[@]+"${carry[@]}"}; do
+  mkdir -p "$(dirname "$path/$rel")"
+  mv "$top/$rel" "$path/$rel"
+  ui_ok "Moved $rel into the worktree"
+done
 
 # Keep files VS Code writes into a worktree (the --open task below, settings.json
 # from extensions) out of git, so worktree:finish sees a clean checkout.
@@ -45,11 +80,12 @@ vscode_ws_add "$main_root"
 
 # Inside a herdr session, open the new worktree as its own herdr workspace:
 # tab named after the branch, split into a left and a right pane.
-if [[ ${HERDR_ENV:-} == 1 ]] && command -v herdr >/dev/null; then
+right=""
+if [[ $in_herdr == true ]]; then
   opened=$(herdr worktree open --cwd "$main_root" --path "$path" --focus)
   herdr tab rename "$(jq -r .result.tab.tab_id <<<"$opened")" "$branch" >/dev/null
-  herdr pane split "$(jq -r .result.root_pane.pane_id <<<"$opened")" \
-    --direction right --cwd "$path" --no-focus >/dev/null
+  right=$(herdr pane split "$(jq -r .result.root_pane.pane_id <<<"$opened")" \
+    --direction right --cwd "$path" --no-focus | jq -r .result.pane.pane_id)
 fi
 
 if [[ ${usage_open:-false} == true ]]; then
@@ -89,3 +125,30 @@ EOF
 fi
 
 ui_ok "$path"
+
+# --agent: Claude Code in the right pane gets the prompt. The pane's shell
+# first runs the project's mise enter hook, and the first start in a new
+# worktree asks whether to trust the folder, so wait generously. The prompt
+# goes through `agent prompt`, not the command line, which macOS limits.
+if [[ -n ${usage_agent:-} ]]; then
+  [[ -n $right && $right != null ]] || ui_die "herdr returned no right pane; start Claude Code there yourself."
+  name=$(tr '[:upper:]' '[:lower:]' <<<"$branch" | tr -c 'a-z0-9_\n-' '-')
+  [[ $name == [a-z]* ]] || name="wt-$name"
+  name=${name:0:32}
+  # herdr refuses a pane whose shell is still starting (agent_pane_busy): retry.
+  deadline=$((SECONDS + 300))
+  until out=$(herdr agent start "$name" --kind claude --pane "$right" --timeout 300000 2>&1); do
+    if [[ $out == *agent_pane_busy* ]] && ((SECONDS < deadline)); then
+      sleep 1
+    elif [[ $out == *agent_not_ready* ]]; then
+      ui_warn "Claude Code is not ready yet; confirm its dialog (trust this folder?) in the right pane."
+      break
+    else
+      ui_die "herdr could not start Claude Code in the right pane: $out"
+    fi
+  done
+  herdr agent wait "$name" --until idle --timeout 600000 >/dev/null ||
+    ui_die "Claude Code ($name) did not become ready; submit the prompt in the right pane yourself."
+  herdr agent prompt "$name" "$usage_agent" >/dev/null
+  ui_ok "Claude Code ($name) took over in the right pane of $branch"
+fi
