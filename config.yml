@@ -15,6 +15,7 @@ brews:
   - name: neovim
   - name: herdr
   - name: graphviz
+  - name: runme
   - name: orbstack
     cask: true
   - name: headlamp
