@@ -72,6 +72,7 @@ npm:
   # majors pinned to the peer ranges of openwiki (mermaid ^11.16, jsdom ^29 || ^30)
   - mermaid@11
   - jsdom@30
+  - "@openai/codex"
 pip: []
 claude:
   # GitHub repos (owner/repo) that provide a Claude Code plugin marketplace
@@ -156,3 +157,4 @@ stows:
   - herdr
   - claude
   - vscode
+  - codex
