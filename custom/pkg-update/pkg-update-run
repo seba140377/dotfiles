@@ -1,0 +1,243 @@
+#!/bin/bash
+# Keeps Homebrew and the global mise tools current (launchd routine, weekly).
+# Usage: pkg-update-run
+#   brew: update, upgrade (formulae and casks, not --greedy), autoremove, cleanup
+#   mise: self-update, upgrade the global tools within their <major>.<minor>
+#   pins (so patch versions only), lock, prune
+#   Reports new minor/major versions (pins are raised by hand) and drift
+#   between the installed brew packages and `brews` in config.yml, then commits
+#   a changed stow/mise/.config/mise/mise.lock in the dotfiles repo (no push).
+# Exit: 0 ok, 1 a step failed (the others still run).
+# Overridable for tests: PU_DOTFILES PU_NOTIFY PU_LOG PU_PATH_PREFIX
+#   PU_SELF_UPDATE (0 skips `mise self-update`)
+
+set -euo pipefail
+
+PU_DOTFILES="${PU_DOTFILES:-/Users/seba/projects/seba140377/src/dotfiles}"
+PU_NOTIFY="${PU_NOTIFY:-}"
+PU_LOG="${PU_LOG:-$HOME/Library/Logs/pkg-update.log}"
+PU_SELF_UPDATE="${PU_SELF_UPDATE:-1}"
+PU_REPORT="${PU_REPORT:-$HOME/Library/Logs/pkg-update-report.md}"
+KEEP_RUNS=30
+LOCK_REL=stow/mise/.config/mise/mise.lock
+TOML_REL=stow/mise/.config/mise/config.toml
+
+# launchd starts without a login shell
+PATH="${PU_PATH_PREFIX:+$PU_PATH_PREFIX:}$HOME/.local/bin:$HOME/.local/share/mise/shims:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+export PATH
+export HOMEBREW_NO_ENV_HINTS=1 HOMEBREW_NO_AUTO_UPDATE=1
+
+# notify <message>: a click on the notification opens the report
+# (terminal-notifier); osascript, the fallback, cannot attach a click action
+notify() {
+  if [ -n "$PU_NOTIFY" ]; then
+    "$PU_NOTIFY" "$1" "$PU_REPORT"
+    return
+  fi
+  # exit 3 until notifications are allowed for terminal-notifier in the
+  # System Settings; then fall back so a notification still arrives
+  if command -v terminal-notifier >/dev/null &&
+    terminal-notifier -title Paketpflege -message "$1" -group de.seba140377.pkg-update \
+      -execute "open -t '$PU_REPORT'" >/dev/null 2>>"$PU_LOG"; then
+    return
+  fi
+  osascript -e "display notification \"$1 Bericht: $PU_REPORT\" with title \"Paketpflege\"" || true
+}
+
+log() { echo "$*" >>"$PU_LOG"; }
+
+# trim_log: keep the last KEEP_RUNS runs (each starts with a "=== " line)
+# shellcheck disable=SC2329 # invoked via trap
+trim_log() {
+  [ -f "$PU_LOG" ] || return 0
+  local runs from
+  runs=$(grep -c '^=== ' "$PU_LOG" || true)
+  [ "$runs" -gt "$KEEP_RUNS" ] || return 0
+  from=$(grep -n '^=== ' "$PU_LOG" | sed -n "$((runs - KEEP_RUNS + 1))p" | cut -d: -f1)
+  tail -n +"$from" "$PU_LOG" >"$PU_LOG.tmp" && mv "$PU_LOG.tmp" "$PU_LOG"
+}
+
+failed=()
+# step <name> <command...>: run a command, log its output, remember a failure
+step() {
+  local name="$1"
+  shift
+  log "--- $name"
+  "$@" >>"$PU_LOG" 2>&1 || {
+    log "pkg-update-run: $name failed (exit $?)"
+    failed+=("$name")
+  }
+}
+
+# can_commit: the dotfiles checkout is on main and the mise files have no
+# changes of their own, so the routine's commit holds only its lockfile update
+can_commit() {
+  local branch
+  branch=$(git -C "$PU_DOTFILES" branch --show-current 2>/dev/null) || return 1
+  if [ "$branch" != main ]; then
+    echo "dotfiles auf Branch $branch, nicht main"
+    return 1
+  fi
+  if [ -n "$(git -C "$PU_DOTFILES" status --porcelain -- "$LOCK_REL" "$TOML_REL")" ]; then
+    echo "eigene Änderungen an der mise-Config"
+    return 1
+  fi
+}
+
+# brew_drift: directly installed formulae/casks vs `brews` in config.yml,
+# compared by name without tap prefix
+brew_drift() {
+  local want have extra missing
+  want=$(yq -r '.brews[].name' "$PU_DOTFILES/config.yml" | sed 's|.*/||' | sort -u)
+  have=$({ brew leaves --installed-on-request; brew list --cask; } | sed 's|.*/||' | sort -u)
+  extra=$(comm -13 <(echo "$want") <(echo "$have") | paste -sd ' ' -)
+  missing=$(comm -23 <(echo "$want") <(echo "$have") | paste -sd ' ' -)
+  [ -z "$extra" ] || echo "extra $extra"
+  [ -z "$missing" ] || echo "missing $missing"
+}
+
+# mise_bumps: tools with a version past their pin, as "tool 1.36 → 1.37"
+mise_bumps() {
+  (cd "$HOME" && mise outdated --global --bump --json) |
+    jq -r 'to_entries[] | select(.value.bump != null and .value.bump != "")
+      | "\(.key) \(.value.requested) → \(.value.bump)"'
+}
+
+trap trim_log EXIT
+mkdir -p "$(dirname "$PU_LOG")"
+log "=== $(date '+%F %T') ==="
+
+commit_ok=1
+commit_reason=$(can_commit) || commit_ok=0
+
+# caffeinate: launchd may start the run in a short dark wake
+step "brew update" caffeinate -i brew update
+brew_up=$(brew outdated --quiet 2>>"$PU_LOG" || true)
+step "brew upgrade" caffeinate -i brew upgrade
+step "brew autoremove" brew autoremove
+step "brew cleanup" brew cleanup
+
+[ "$PU_SELF_UPDATE" = 0 ] || step "mise self-update" mise self-update -y
+upgrades="$PU_LOG.upgrades"
+log "--- mise upgrade"
+if (cd "$HOME" && caffeinate -i mise upgrade --global) >"$upgrades" 2>&1; then
+  cat "$upgrades" >>"$PU_LOG"
+else
+  cat "$upgrades" >>"$PU_LOG"
+  log "pkg-update-run: mise upgrade failed"
+  failed+=("mise upgrade")
+fi
+# Only the block after "Upgraded N tools:" lists done upgrades; the
+# "Newer versions are available …" block lists versions past the pins.
+changes=$(awk '/^Upgraded [0-9]+ tools?:/ {f = 1; next} f && /^[[:space:]]+[^[:space:]]+ [^[:space:]]+ → / {sub(/^[[:space:]]+/, "- "); print; next} {f = 0}' "$upgrades")
+mise_lock() { (cd "$HOME" && mise lock --global); }
+step "mise lock" mise_lock
+step "mise prune" mise prune -y
+
+bumps=$(mise_bumps 2>>"$PU_LOG" || true)
+drift=$(brew_drift 2>>"$PU_LOG" || true)
+brew_extra=$(sed -n 's/^extra //p' <<<"$drift")
+brew_missing=$(sed -n 's/^missing //p' <<<"$drift")
+[ -z "$bumps" ] || log "neue Minor/Major-Versionen (Pin von Hand anheben):" "$bumps"
+[ -z "$brew_extra" ] || log "brew nicht in config.yml: $brew_extra"
+[ -z "$brew_missing" ] || log "brew fehlt: $brew_missing"
+
+# Commit the lockfile when the upgrade changed it
+commit="" skipped=0
+if ! git -C "$PU_DOTFILES" diff --quiet -- "$LOCK_REL"; then
+  if [ "$commit_ok" = 1 ]; then
+    msg="chore(mise): update global tools to the latest patch versions"
+    [ -z "$changes" ] || msg=$(printf '%s\n\n%s\n' "$msg" "$changes")
+    if git -C "$PU_DOTFILES" commit -q -m "$msg" -- "$LOCK_REL" >>"$PU_LOG" 2>&1; then
+      commit=$(git -C "$PU_DOTFILES" rev-parse --short HEAD)
+      log "commit $commit"
+    else
+      log "pkg-update-run: commit failed"
+      failed+=("commit")
+    fi
+  else
+    skipped=1
+    log "kein Commit: $commit_reason"
+  fi
+fi
+rm -f "$upgrades"
+
+n_brew=0
+[ -z "$brew_up" ] || n_brew=$(wc -l <<<"$brew_up" | tr -d ' ')
+n_up=0
+[ -z "$changes" ] || n_up=$(wc -l <<<"$changes" | tr -d ' ')
+
+# write_report: what ran, and what is left to do with copyable commands
+write_report() {
+  local todo=0 tool from to
+  echo "# Paketpflege, $(date '+%F %H:%M')"
+  echo
+  echo "Aktualisiert: $n_brew brew-Pakete, $n_up mise-Tools."
+  echo
+  echo "## Zu tun"
+  echo
+  if [ "${#failed[@]}" -gt 0 ]; then
+    todo=1
+    echo "- **Fehlgeschlagen: $(printf '%s, ' "${failed[@]}" | sed 's/, $//').** Die Ausgabe steht im Log unter dem letzten \`===\`-Abschnitt:"
+    echo "  \`open -t $PU_LOG\`"
+  fi
+  if [ "$skipped" = 1 ]; then
+    todo=1
+    echo "- **Die Lockdatei ist aktualisiert, aber nicht committet** ($commit_reason)."
+    echo "  Bring den dotfiles-Checkout auf \`main\` ohne eigene Änderungen an der mise-Config und committe dann:"
+    echo "  \`git -C $PU_DOTFILES commit -m \"chore(mise): update global tools to the latest patch versions\" -- $LOCK_REL\`"
+  fi
+  if [ -n "$bumps" ]; then
+    todo=1
+    echo "- **Neue Minor- oder Major-Versionen.** Optional, nur wenn du sie willst: pro Tool in \`~\` anheben, danach einmal committen."
+    while read -r tool from _ to; do
+      echo "  - $tool $from → $to: \`cd ~ && mise upgrade --bump $tool && mise lock --global\`"
+    done <<<"$bumps"
+    echo "  - Commit: \`git -C $PU_DOTFILES commit -m \"chore(mise): raise pins\" -- $TOML_REL $LOCK_REL\`"
+  fi
+  if [ -n "$brew_extra" ]; then
+    todo=1
+    echo "- **Installiert, aber nicht in config.yml:** $brew_extra. Entweder unter \`brews\` in \`$PU_DOTFILES/config.yml\` eintragen oder entfernen:"
+    echo "  \`brew uninstall $brew_extra\`"
+  fi
+  if [ -n "$brew_missing" ]; then
+    todo=1
+    echo "- **In config.yml, aber nicht installiert:** $brew_missing. Installieren:"
+    echo "  \`cd $PU_DOTFILES && ./setup.sh --brew\`"
+  fi
+  [ "$todo" = 1 ] || echo "Nichts zu tun."
+  echo
+  echo "## Aktualisiert"
+  echo
+  if [ -n "$brew_up" ]; then
+    echo "- brew: $(paste -sd ',' - <<<"$brew_up" | sed 's/,/, /g')"
+  else
+    echo "- brew: nichts"
+  fi
+  if [ -n "$changes" ]; then
+    echo "- mise:"
+    while read -r line; do echo "  $line"; done <<<"$changes"
+  else
+    echo "- mise: nichts"
+  fi
+  if [ -n "$commit" ]; then
+    echo "- Commit in den dotfiles: \`$commit\` (nicht gepusht)"
+  fi
+  echo
+  echo "Log: \`$PU_LOG\`"
+}
+write_report >"$PU_REPORT"
+
+# Summary notification
+summary="Aktualisiert: $n_brew brew-Pakete, $n_up mise-Tools"
+[ -z "$commit" ] || summary+=", Commit $commit"
+[ "${#failed[@]}" -eq 0 ] || summary="Fehler: $(printf '%s, ' "${failed[@]}" | sed 's/, $//'). $summary"
+if grep -q '^Nichts zu tun\.$' "$PU_REPORT"; then
+  summary+=". Nichts zu tun."
+else
+  summary+=". Zu tun: siehe Bericht (klicken)."
+fi
+log "$summary"
+notify "$summary"
+
+[ "${#failed[@]}" -eq 0 ]

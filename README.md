@@ -2,7 +2,7 @@
 
 Personal macOS dotfiles, managed declaratively with [GNU Stow](https://www.gnu.org/software/stow/), [Homebrew](https://brew.sh) and [mise](https://mise.jdx.dev).
 
-A single `config.yml` lists every package, tool and dotfile set; `setup.sh` turns it into a working machine.
+`config.yml` lists the packages and dotfile sets, `stow/mise/.config/mise/config.toml` the global mise tools; `setup.sh` turns them into a working machine and the weekly `pkg-update` routine keeps them current.
 
 <details>
 <summary>Table of Contents</summary>
@@ -14,6 +14,7 @@ A single `config.yml` lists every package, tool and dotfile set; `setup.sh` turn
 - [ZSH](#zsh)
 - [Global mise Tasks](#global-mise-tasks)
 - [Adding Things](#adding-things)
+- [Keeping Packages Current](#keeping-packages-current)
 - [Acknowledgments](#acknowledgments)
 
 </details>
@@ -26,12 +27,12 @@ A single `config.yml` lists every package, tool and dotfile set; `setup.sh` turn
 | --- | --- |
 | Shell | zsh (XDG layout, no plugin manager), [starship](https://starship.rs), [atuin](https://atuin.sh), fzf, zoxide, eza, bat, ripgrep, fd |
 | Terminal & editor | [WezTerm](https://wezterm.org), [zellij](https://zellij.dev), [herdr](https://herdr.dev), [Neovim](https://neovim.io) ([LazyVim](https://www.lazyvim.org)) |
-| Dev runtimes | mise, Node (LTS), Python 3.14, pre-commit, gitleaks |
+| Dev runtimes | mise, Node 26.13, Python 3.14, pre-commit, gitleaks |
 | Kubernetes | kubectl, kubectx/kubens, helm, kustomize, flux2, flux-operator, kubeconform, k9s, Headlamp |
 | Secrets | sops, age, vault, gnupg |
 | Other | OrbStack, GitHub CLI, glab, restic, [Claude Code](https://claude.com/claude-code) + plugins |
 
-See [`config.yml`](config.yml) for the authoritative list.
+See [`config.yml`](config.yml) (Homebrew, custom, npm, Claude) and [`stow/mise/.config/mise/config.toml`](stow/mise/.config/mise/config.toml) (mise tools) for the authoritative lists.
 
 ### Built With
 
@@ -110,16 +111,17 @@ Each stow package mirrors `$HOME`:
 
 ```
 dotfiles/
-├── config.yml            # Single source of truth: brews, custom, mise, npm, pip, claude, stows
+├── config.yml            # Single source of truth: brews, custom, npm, pip, claude, stows
 ├── setup.sh              # Setup orchestration
 ├── mise.toml             # Repo-local mise config (installs pre-commit hooks on enter)
 ├── custom/               # install_<name>.sh scripts for tools not in brew/mise
-│   └── ekread/           # read-only EventKit CLI (calendars, reminders → JSON); test: custom/ekread/test.sh
+│   ├── ekread/           # read-only EventKit CLI (calendars, reminders → JSON); test: custom/ekread/test.sh
+│   └── pkg-update/       # weekly brew/mise update routine (launchd); test: custom/pkg-update/test.sh
 └── stow/                 # Stow directory: one package per entry in `stows`
     ├── zsh/.config/zsh/      # → ~/.config/zsh/
     ├── git/.gitconfig        # → ~/.gitconfig  (includes ~/.gitconfig.local)
     ├── git/.gitignore        # → ~/.gitignore  (global excludes)
-    ├── mise/.config/mise/    # → ~/.config/mise/ (global tools, env, tasks)
+    ├── mise/.config/mise/    # → ~/.config/mise/ (global tools + mise.lock, env, tasks)
     ├── nvim/.config/nvim/    # → ~/.config/nvim/
     ├── claude/.claude/       # → ~/.claude/statusline*.sh (cc-statusline + Orca wrapper), global CLAUDE.md
     ├── codex/.codex/         # → ~/.codex/config.toml
@@ -165,13 +167,17 @@ SOPS uses the age key at `~/.config/mise/age.txt` (configured in `stow/mise/.con
 | What | How |
 | --- | --- |
 | Homebrew package | Add to `brews` in `config.yml` (`cask: true` for casks) → `./setup.sh --brew` |
-| mise tool | Add to `mise` in `config.yml` **and** `[tools]` in `stow/mise/.config/mise/config.toml` → `./setup.sh --mise` |
+| mise tool | Add to `[tools]` in `stow/mise/.config/mise/config.toml`, pinned as `<major>.<minor>` → `./setup.sh --mise`, then `mise lock --global` in `~` |
 | Custom tool | Create an idempotent `custom/install_<name>.sh`, add `<name>` to `custom` |
 | Stow package | Create `stow/<name>/<path-from-home>/…`, add to `stows` → `stow <name>` |
 | Claude plugin | Add to `claude.marketplaces` / `claude.plugins` → `./setup.sh --claude` |
 | Claude permission rule | Add to `claude.permissions.deny` → `./setup.sh --claude` |
 
 Commits run [pre-commit](https://pre-commit.com) hooks (gitleaks, end-of-file-fixer, trailing-whitespace).
+
+## Keeping Packages Current
+
+The `pkg-update` routine (`custom/pkg-update/`, launchd agent `de.seba140377.pkg-update`, Sundays 18:00) runs `brew update/upgrade/autoremove/cleanup`, `mise self-update` and, for the global tools, `mise upgrade` within their `<major>.<minor>` pins (patch versions only), `mise lock --global` and `mise prune`. It commits a changed `stow/mise/.config/mise/mise.lock` to `main` (no push) and sends a notification that names newer minor/major versions and Homebrew packages that differ from `config.yml`. It changes neither pins nor the brew list: raise a pin by hand with `mise upgrade --bump <tool>` in `~`, then `mise lock --global` and commit. Clicking the notification (sent by `terminal-notifier`; allow it once under System Settings → Notifications) opens the report `~/Library/Logs/pkg-update-report.md`, which lists what was updated and, under "Zu tun", copyable commands for whatever is left. Log: `~/Library/Logs/pkg-update.log`; run now with `launchctl kickstart gui/$(id -u)/de.seba140377.pkg-update`.
 
 ## Acknowledgments
 

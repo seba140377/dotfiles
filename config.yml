@@ -16,6 +16,8 @@ brews:
   - name: herdr
   - name: graphviz
   - name: runme
+  # pkg-update: notification whose click opens the report
+  - name: terminal-notifier
   - name: orbstack
     cask: true
   - name: headlamp
@@ -28,42 +30,9 @@ custom:
   - bash-commons
   - claude-code
   - ekread
+  - pkg-update
   - tagesplanung
   - vault-mcp-server
-mise:
-  - fd
-  - ripgrep
-  - age
-  - atuin
-  - bat
-  - eza
-  - fzf
-  - gum
-  - jq
-  - python@3.14
-  - node@lts
-  - sops
-  - starship
-  - yq
-  - zellij
-  - zoxide
-  - usage@3.5
-  - restic
-  - gitleaks
-  - pre-commit
-  - kubectl@1.36
-  - kubectx
-  - kubens
-  - helm@4.2
-  - kustomize@5.8
-  - flux2@2.9
-  - kubeconform@0.8
-  - k9s
-  - github-cli
-  - glab
-  - vault
-  - yt-dlp
-  - ffmpeg
 npm:
   - "@openai/codex"
 pip: []

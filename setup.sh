@@ -116,25 +116,17 @@ install_custom_tools() {
   done
 }
 
-# Installs custom tools using installation scripts from $DOTFILES_DIR/custom/
-# - Reads the list of custom packages from the config file
-# - For each custom package, executes its corresponding install script
-# - Install scripts are expected to be located at $DOTFILES_DIR/custom/install_<package>.sh
-# - This allows for flexible installation of tools that require custom setup beyond brew
+# Installs the global mise tools
+# - The repo's stow/mise/.config/mise/config.toml is the single source of the
+#   tool list (pins as <major>.<minor>), with the exact versions in mise.lock next to it
+# - Points mise at that file directly, so this also works before stow_dotfiles
+#   has linked it to ~/.config/mise/config.toml on a new machine
 install_mise_tools() {
-  # Read mise packages from config.yml
-  MISE_PACKAGES=$(yq -r '.mise[]' "$CONFIG_FILE" | tr '\n' ' ')
-
   echo ""
   echo "🔸 Installing global mise tools..."
 
-  for pkg in $MISE_PACKAGES; do
-    echo "   Installing: $pkg ..."
-
-    $HOME/.local/bin/mise use -g "$pkg" > /dev/null 2>&1
-  done
-
-  $HOME/.local/bin/mise install
+  MISE_GLOBAL_CONFIG_FILE="$DOTFILES_DIR/stow/mise/.config/mise/config.toml" \
+    "$HOME/.local/bin/mise" install
 }
 
 # Installs global npm packages as specified in config.yml

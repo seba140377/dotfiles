@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Template: install_pkg-update.sh replaces __BIN__ and __HOME__. -->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>de.seba140377.pkg-update</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>__BIN__/pkg-update-run</string>
+  </array>
+  <!-- Sundays 18:00; launchd catches up a run missed during sleep on wake. -->
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Weekday</key>
+    <integer>0</integer>
+    <key>Hour</key>
+    <integer>18</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
+  <key>RunAtLoad</key>
+  <false/>
+  <key>StandardOutPath</key>
+  <string>__HOME__/Library/Logs/pkg-update.log</string>
+  <key>StandardErrorPath</key>
+  <string>__HOME__/Library/Logs/pkg-update.log</string>
+</dict>
+</plist>
