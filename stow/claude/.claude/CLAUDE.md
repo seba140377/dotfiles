@@ -1,6 +1,6 @@
 # Global Claude Code instructions
 
-Stowed from the dotfiles repo (`claude/.claude/CLAUDE.md` → `~/.claude/CLAUDE.md`).
+Stowed from the dotfiles repo (`stow/claude/.claude/CLAUDE.md` → `~/.claude/CLAUDE.md`).
 Applies to every project; project `CLAUDE.md` files take precedence.
 
 ## Handoffs

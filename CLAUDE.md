@@ -11,7 +11,7 @@ All package installations and stow operations are defined in `config.yml`:
 - `custom`: Custom tools requiring specialized installation scripts (located in `custom/install_<name>.sh`)
   - `ekread`: own read-only EventKit CLI (sources in `custom/ekread/`), lists macOS calendar events and reminders as JSON for Claude Code. `install_ekread.sh` compiles it with `swiftc` into `~/.local/bin/ekread` (embedded `Info.plist` is required for the macOS access prompt). ekread re-spawns itself with disclaimed responsibility (`responsibility_spawnattrs_setdisclaim`), so macOS asks for and stores access for `ekread` itself, not for the terminal or the `claude` binary (whose missing calendar usage description would make macOS deny silently); a rebuild changes the ad-hoc signature, so access must be granted again. `custom/ekread/test.sh` runs the unit tests and CLI checks. Never add EventKit write calls (`save`/`remove`/`commit`/`reset`); the test fails on them.
   - `tagesplanung`: routine for the vault skill `tagesplanung` (claude-code-os). `install_tagesplanung.sh` copies the wrapper `custom/tagesplanung/tagesplanung-run` to `~/.local/bin` and loads the launchd agent `de.seba140377.tagesplanung` (daily 20:00). The wrapper runs `claude -p "/tagesplanung <mode> --routine"` in the vault with `--permission-mode dontAsk` and a narrow `--allowedTools` list (no tool outside it runs; push only to `origin main`): `morgen` (+ `woche` on Sundays), before 12:00 (run caught up after sleep) `heute` (+ `woche` on Mondays); exit 2 = ekread access missing. Log `~/Library/Logs/tagesplanung.log` (last 30 runs), local notifications only. `custom/tagesplanung/test.sh` runs stubbed tests. The routine writes only `plans/` in the vault.
-- `mise`: Development tools managed by mise (also duplicated in `mise/.config/mise/config.toml`)
+- `mise`: Development tools managed by mise (also duplicated in `stow/mise/.config/mise/config.toml`)
 - `npm`: Global npm packages to install. `setup.sh` installs them into every Node version mise has installed and writes them to `~/.default-npm-packages`, which mise installs into every Node version it installs later (e.g. one pinned by a project), so global CLIs such as `openwiki` (the OpenWiki MCP server) work regardless of a project's Node pin
 - `pip`: Global pip packages to install
 - `claude`: Claude Code plugin `marketplaces` (GitHub `owner/repo`) and `plugins` (`<plugin>@<marketplace>`) to ensure are installed, plus `permissions.deny` rules merged into `~/.claude/settings.json` (currently: all write tools of the claude.ai Gmail, Google Calendar, Google Drive and Slack connectors, which stay read-only)
@@ -19,18 +19,18 @@ All package installations and stow operations are defined in `config.yml`:
 
 ### Directory Structure Pattern
 
-Each stow package (e.g., `zsh/`, `git/`, `mise/`) contains a directory tree that mirrors the home directory structure. Most packages follow the XDG layout under `.config/`. When stowed, files are symlinked to their corresponding locations:
-- `nvim/.config/nvim/` → `~/.config/nvim/` (LazyVim-based config)
-- `claude/.claude/` → `~/.claude/` (only `statusline.sh`, `statusline-wrapper.sh` and the global `CLAUDE.md` with user-wide Claude Code instructions; the rest of `~/.claude/` is not managed by stow)
-- `vscode/Library/Application Support/Code/User/` → `~/Library/Application Support/Code/User/` (only `settings.json` and `keybindings.json`; these belong to the default profile; additional VS Code profiles only pick them up if they are set to use the default profile's settings/keybindings)
+Each stow package (e.g., `stow/zsh/`, `stow/git/`, `stow/mise/`) contains a directory tree that mirrors the home directory structure. Most packages follow the XDG layout under `.config/`. When stowed, files are symlinked to their corresponding locations:
+- `stow/nvim/.config/nvim/` → `~/.config/nvim/` (LazyVim-based config)
+- `stow/claude/.claude/` → `~/.claude/` (only `statusline.sh`, `statusline-wrapper.sh` and the global `CLAUDE.md` with user-wide Claude Code instructions; the rest of `~/.claude/` is not managed by stow)
+- `stow/vscode/Library/Application Support/Code/User/` → `~/Library/Application Support/Code/User/` (only `settings.json` and `keybindings.json`; these belong to the default profile; additional VS Code profiles only pick them up if they are set to use the default profile's settings/keybindings)
 
-The stow target is always `$HOME`, independent of where the repo is cloned (currently `~/projects/seba140377/src/dotfiles`): `setup.sh` calls `stow -d <repo> -t "$HOME"`, and `.stowrc` (`--target=~`) does the same for manual `stow` commands run from the repo root. `.stow-local-ignore` excludes repo-level files (`setup.sh`, `config.yml`, `CLAUDE.md`, etc.) from stowing. `setup.sh` stows without `--adopt`: existing real files at target paths in `$HOME` cause a stow conflict for that package instead of being pulled into the repo. Resolve by moving the file away, or run `stow --adopt <package>` manually and check `git diff`.
+The stow target is always `$HOME`, independent of where the repo is cloned (currently `~/projects/seba140377/src/dotfiles`): all packages live under `stow/`, which is the stow directory: `setup.sh` calls `stow -d <repo>/stow -t "$HOME"`, and `.stowrc` (`--dir=stow --target=~`) does the same for manual `stow <package>` commands run from the repo root. Repo-level files (`setup.sh`, `config.yml`, `custom/`, docs) sit outside `stow/` and are never stowed. `setup.sh` stows without `--adopt`: existing real files at target paths in `$HOME` cause a stow conflict for that package instead of being pulled into the repo. Resolve by moving the file away, or run `stow --adopt <package>` manually and check `git diff`.
 
 ### ZSH Configuration Architecture
 
 ZSH uses `ZDOTDIR=~/.config/zsh`. This is set by `/etc/zshenv` (outside the repo, a manual prerequisite; `setup.sh` does not create it). There is no `~/.zshrc`.
 
-Files in `zsh/.config/zsh/`:
+Files in `stow/zsh/.config/zsh/`:
 - `.zshrc`: history, shell options, `mise activate`, `compinit`, then sources modular scripts from `$ZDOTDIR/zshrc.d/` and runs `welcome-banner.sh`. `VERBOSE` and `BANNER` flags at the top control startup output.
 - `completions/`: Checked-in completion files for `mise` and `zellij` (built-in generation doesn't work; regenerate manually after upgrading those tools — see comments in `enable.mise.zsh` / `enable.zellij.zsh`)
 
@@ -52,13 +52,13 @@ The setup process creates `~/.user_details` (YAML format with name/email) and ge
 
 There are two mise configuration files:
 - **`mise.toml`** (repository root): Project-specific configuration; its `enter` hook runs `mise i` and `pre-commit install` when entering the directory
-- **`mise/.config/mise/config.toml`** (stowed to `~/.config/mise/config.toml`): Global tool versions, `experimental = true`, and environment variables (SOPS/Age configuration)
+- **`stow/mise/.config/mise/config.toml`** (stowed to `~/.config/mise/config.toml`): Global tool versions, `experimental = true`, and environment variables (SOPS/Age configuration)
 
-The tool list in `config.yml` (`mise:`) and `[tools]` in `mise/.config/mise/config.toml` must be kept in sync when adding tools. Version pins may be expressed as `tool@version` in `config.yml` and `tool = "version"` in the TOML.
+The tool list in `config.yml` (`mise:`) and `[tools]` in `stow/mise/.config/mise/config.toml` must be kept in sync when adding tools. Version pins may be expressed as `tool@version` in `config.yml` and `tool = "version"` in the TOML.
 
 ### Global mise Tasks
 
-Task scripts in `mise/.config/mise/tasks/` are stowed to `~/.config/mise/tasks/` and become available as `mise run <task>` in any project once mise is activated (`mise tasks` lists them).
+Task scripts in `stow/mise/.config/mise/tasks/` are stowed to `~/.config/mise/tasks/` and become available as `mise run <task>` in any project once mise is activated (`mise tasks` lists them).
 
 ## Common Commands
 
@@ -88,15 +88,15 @@ Useful for testing configuration changes or re-running a single install step wit
 
 ### Adding Packages
 - **Homebrew**: add to `brews` in `config.yml` (with `cask: true` for casks), run `./setup.sh --brew`
-- **mise tool**: add to `mise` in `config.yml` **and** `[tools]` in `mise/.config/mise/config.toml`, run `./setup.sh --mise`
+- **mise tool**: add to `mise` in `config.yml` **and** `[tools]` in `stow/mise/.config/mise/config.toml`, run `./setup.sh --mise`
 - **Custom tool**: create an idempotent `custom/install_<name>.sh`, add `<name>` to `custom` in `config.yml`
-- **Stow package**: create `<name>/<path-from-home>/...`, add to `stows` in `config.yml`, run `stow <name>`
-- **Shell integration**: add `zsh/.config/zsh/zshrc.d/enable.<tool>.zsh` guarded by `command -v <tool>`
+- **Stow package**: create `stow/<name>/<path-from-home>/...`, add to `stows` in `config.yml`, run `stow <name>`
+- **Shell integration**: add `stow/zsh/.config/zsh/zshrc.d/enable.<tool>.zsh` guarded by `command -v <tool>`
 
 ## Important Files
 
-- `nvim/.config/nvim/`: Neovim (LazyVim) configuration, adapted from omerxx/dotfiles
-- `herdr/.config/herdr/`: herdr configuration and herdr-plus plugin config (plugin auto-installed by `enable.herdr.zsh`)
-- `vscode/Library/Application Support/Code/User/settings.json`: VS Code user settings (incl. `terminal.integrated.rightClickBehavior: nothing` so herdr gets the right-click); `keybindings.json` next to it
-- `claude/.claude/statusline.sh`: Claude Code statusline generated by [cc-statusline](https://github.com/chongdashu/cc-statusline) (`npx @chongdashu/cc-statusline@latest init`, then move the result from `~/.claude/statusline.sh` into the repo and `stow -R claude` — the generator ignores `--output` and writes nothing with `--no-install`)
-- `claude/.claude/statusline-wrapper.sh`: The actual `statusLine` command; forwards the JSON payload to Orca's hook (`~/.orca/agent-hooks/claude-statusline.sh`, if present) in the background, then runs `statusline.sh`. `configure_claude_statusline` in `setup.sh` writes only the `.statusLine` key and `configure_claude_permissions` only adds to `.permissions.deny` of `~/.claude/settings.json` (backup in `settings.json.bak`); `settings.json` itself is not stowed
+- `stow/nvim/.config/nvim/`: Neovim (LazyVim) configuration, adapted from omerxx/dotfiles
+- `stow/herdr/.config/herdr/`: herdr configuration and herdr-plus plugin config (plugin auto-installed by `enable.herdr.zsh`)
+- `stow/vscode/Library/Application Support/Code/User/settings.json`: VS Code user settings (incl. `terminal.integrated.rightClickBehavior: nothing` so herdr gets the right-click); `keybindings.json` next to it
+- `stow/claude/.claude/statusline.sh`: Claude Code statusline generated by [cc-statusline](https://github.com/chongdashu/cc-statusline) (`npx @chongdashu/cc-statusline@latest init`, then move the result from `~/.claude/statusline.sh` into the repo and `stow -R claude` — the generator ignores `--output` and writes nothing with `--no-install`)
+- `stow/claude/.claude/statusline-wrapper.sh`: The actual `statusLine` command; forwards the JSON payload to Orca's hook (`~/.orca/agent-hooks/claude-statusline.sh`, if present) in the background, then runs `statusline.sh`. `configure_claude_statusline` in `setup.sh` writes only the `.statusLine` key and `configure_claude_permissions` only adds to `.permissions.deny` of `~/.claude/settings.json` (backup in `settings.json.bak`); `settings.json` itself is not stowed

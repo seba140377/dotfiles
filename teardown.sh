@@ -8,5 +8,5 @@ echo "The teardown.sh script is temporarily disabled."
 # echo "• Unstowing dotfilles..."
 # yq '.stows[]' "$CONFIG_FILE" | while read -r stow; do
 #   echo "  > $stow"
-#   stow -D $stow
+#   stow -D -d stow $stow
 # done

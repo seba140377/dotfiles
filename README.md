@@ -93,7 +93,7 @@ Run a single step instead of the full setup (always from the repo root):
 ./setup.sh --claude    # Claude Code marketplaces, plugins, statusline and permissions (requires Claude Code)
 ```
 
-Manual stow operations:
+Manual stow operations (run from the repo root; `.stowrc` sets `--dir=stow --target=~`):
 
 ```bash
 stow <package>        # Symlink a package
@@ -115,17 +115,20 @@ dotfiles/
 ├── mise.toml             # Repo-local mise config (installs pre-commit hooks on enter)
 ├── custom/               # install_<name>.sh scripts for tools not in brew/mise
 │   └── ekread/           # read-only EventKit CLI (calendars, reminders → JSON); test: custom/ekread/test.sh
-├── zsh/.config/zsh/      # → ~/.config/zsh/
-├── git/.gitconfig        # → ~/.gitconfig  (includes ~/.gitconfig.local)
-├── git/.gitignore        # → ~/.gitignore  (global excludes)
-├── mise/.config/mise/    # → ~/.config/mise/ (global tools, env, tasks)
-├── nvim/.config/nvim/    # → ~/.config/nvim/
-├── claude/.claude/       # → ~/.claude/statusline*.sh (cc-statusline + Orca wrapper), global CLAUDE.md
-├── wezterm/, zellij/, herdr/, starship/, atuin/, neofetch/   # → ~/.config/...
-└── notes/notes/          # → ~/notes/
+└── stow/                 # Stow directory: one package per entry in `stows`
+    ├── zsh/.config/zsh/      # → ~/.config/zsh/
+    ├── git/.gitconfig        # → ~/.gitconfig  (includes ~/.gitconfig.local)
+    ├── git/.gitignore        # → ~/.gitignore  (global excludes)
+    ├── mise/.config/mise/    # → ~/.config/mise/ (global tools, env, tasks)
+    ├── nvim/.config/nvim/    # → ~/.config/nvim/
+    ├── claude/.claude/       # → ~/.claude/statusline*.sh (cc-statusline + Orca wrapper), global CLAUDE.md
+    ├── codex/.codex/         # → ~/.codex/config.toml
+    ├── vscode/Library/…      # → ~/Library/Application Support/Code/User/
+    ├── wezterm/, zellij/, herdr/, starship/, atuin/, neofetch/   # → ~/.config/...
+    └── notes/notes/          # → ~/notes/
 ```
 
-Files listed in `.stow-local-ignore` (scripts, docs, `config.yml`) are never stowed.
+Only `stow/` is stowed (`setup.sh` and `.stowrc` use it as the stow directory); scripts, docs and `config.yml` in the repo root are never linked into `$HOME`.
 
 ## ZSH
 
@@ -153,16 +156,16 @@ Stowed to `~/.config/mise/tasks/` and available everywhere via `mise run <task>`
 | `secrets:show [file]` | Show a decrypted SOPS file (default `.creds.env.yaml`) |
 | `secrets:edit [file]` | Edit a SOPS file (default `.creds.env.yaml`) |
 
-SOPS uses the age key at `~/.config/mise/age.txt` (configured in `mise/.config/mise/config.toml`).
+SOPS uses the age key at `~/.config/mise/age.txt` (configured in `stow/mise/.config/mise/config.toml`).
 
 ## Adding Things
 
 | What | How |
 | --- | --- |
 | Homebrew package | Add to `brews` in `config.yml` (`cask: true` for casks) → `./setup.sh --brew` |
-| mise tool | Add to `mise` in `config.yml` **and** `[tools]` in `mise/.config/mise/config.toml` → `./setup.sh --mise` |
+| mise tool | Add to `mise` in `config.yml` **and** `[tools]` in `stow/mise/.config/mise/config.toml` → `./setup.sh --mise` |
 | Custom tool | Create an idempotent `custom/install_<name>.sh`, add `<name>` to `custom` |
-| Stow package | Create `<name>/<path-from-home>/…`, add to `stows` → `stow <name>` |
+| Stow package | Create `stow/<name>/<path-from-home>/…`, add to `stows` → `stow <name>` |
 | Claude plugin | Add to `claude.marketplaces` / `claude.plugins` → `./setup.sh --claude` |
 | Claude permission rule | Add to `claude.permissions.deny` → `./setup.sh --claude` |
 

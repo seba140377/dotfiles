@@ -2,7 +2,7 @@
 
 clear
 
-# Shell activation for brew and mise comes from the stowed zsh/.config/zsh/.zprofile and .zshrc
+# Shell activation for brew and mise comes from the stowed stow/zsh/.config/zsh/.zprofile and .zshrc
 
 # installl brew
 if ! command -v brew &> /dev/null; then
@@ -21,6 +21,7 @@ fi
 # Repository root (directory of this script), so setup.sh works wherever the repo is cloned
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_FILE="$DOTFILES_DIR/config.yml"
+STOW_DIR="$DOTFILES_DIR/stow"
 
 # Prepares the environment by activating mise and installing required tools
 # - Activates mise for the shell
@@ -227,7 +228,7 @@ install_claude_plugins() {
   fi
 }
 
-# Points Claude Code's statusLine at the stowed wrapper (claude/.claude/statusline-wrapper.sh)
+# Points Claude Code's statusLine at the stowed wrapper (stow/claude/.claude/statusline-wrapper.sh)
 # - Only touches the .statusLine key; all other settings are preserved
 # - Backs up settings.json before changing it; no-op if already configured
 configure_claude_statusline() {
@@ -288,14 +289,14 @@ stow_dotfiles() {
 
   for stow in $STOWS; do
     echo "   Stowing: $stow ..."
-    stow -d "$DOTFILES_DIR" -t "$HOME" "$stow"
-    # stow -d "$DOTFILES_DIR" -t "$HOME" "$stow" --adopt
+    stow -d "$STOW_DIR" -t "$HOME" "$stow"
+    # stow -d "$STOW_DIR" -t "$HOME" "$stow" --adopt
   done
 }
 
 # Uses GNU Stow to symlink dotfiles from the repository to the home directory
 # - Reads the list of stow packages from the config file
-# - For each package, creates symlinks from $DOTFILES_DIR/<package>/ to ~/
+# - For each package, creates symlinks from $STOW_DIR/<package>/ to ~/
 # - This allows version-controlled dotfiles to be easily managed and deployed
 # - Stow automatically handles directory structures and prevents conflicts
 create_user_specific_files() {
