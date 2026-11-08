@@ -73,7 +73,7 @@ cd ~/projects/seba140377/src/dotfiles
 1. Install Homebrew and mise (if missing), plus `yq` and `gum`
 2. Ask for your name and email (stored in `~/.user_details`)
 3. Install Homebrew formulas/casks, custom tools and mise tools
-4. Add Claude Code plugin marketplaces, install plugins, configure the statusline and permission deny rules
+4. Add Claude Code plugin marketplaces, install plugins and permission deny rules
 5. Install global npm packages (into every installed mise Node version, and via `~/.default-npm-packages` into every future one) and pip packages
 6. Stow all dotfiles and write `~/.gitconfig.local`
 
@@ -91,7 +91,7 @@ Run a single step instead of the full setup (always from the repo root):
 ./setup.sh --mise      # mise tools
 ./setup.sh --npm       # Global npm packages
 ./setup.sh --pip       # Global pip packages
-./setup.sh --claude    # Claude Code marketplaces, plugins, statusline and permissions (requires Claude Code)
+./setup.sh --claude    # Claude Code marketplaces, plugins and permissions (requires Claude Code)
 ```
 
 Manual stow operations (run from the repo root; `.stowrc` sets `--dir=stow --target=~`):
@@ -123,7 +123,7 @@ dotfiles/
     ├── git/.gitignore        # → ~/.gitignore  (global excludes)
     ├── mise/.config/mise/    # → ~/.config/mise/ (global tools + mise.lock, env, tasks)
     ├── nvim/.config/nvim/    # → ~/.config/nvim/
-    ├── claude/.claude/       # → ~/.claude/statusline*.sh (cc-statusline + Orca wrapper), global CLAUDE.md
+    ├── claude/.claude/       # → ~/.claude/CLAUDE.md (global Claude Code instructions)
     ├── codex/.codex/         # → ~/.codex/config.toml
     ├── vscode/Library/…      # → ~/Library/Application Support/Code/User/
     ├── wezterm/, zellij/, herdr/, starship/, atuin/, neofetch/   # → ~/.config/...

@@ -220,29 +220,6 @@ install_claude_plugins() {
   fi
 }
 
-# Points Claude Code's statusLine at the stowed wrapper (stow/claude/.claude/statusline-wrapper.sh)
-# - Only touches the .statusLine key; all other settings are preserved
-# - Backs up settings.json before changing it; no-op if already configured
-configure_claude_statusline() {
-  SETTINGS="$HOME/.claude/settings.json"
-  STATUSLINE_CMD="~/.claude/statusline-wrapper.sh"
-
-  echo ""
-  echo "🔸 Configuring Claude Code statusline..."
-
-  [ -f "$SETTINGS" ] || echo '{}' > "$SETTINGS"
-
-  if [ "$(jq -r '.statusLine.command // empty' "$SETTINGS")" = "$STATUSLINE_CMD" ]; then
-    echo "   Statusline already configured"
-    return 0
-  fi
-
-  echo "   Configuring statusline ..."
-  cp "$SETTINGS" "$SETTINGS.bak"
-  jq --arg cmd "$STATUSLINE_CMD" '.statusLine = {type: "command", command: $cmd, padding: 0}' \
-    "$SETTINGS.bak" > "$SETTINGS.tmp" && mv "$SETTINGS.tmp" "$SETTINGS"
-}
-
 # Adds the permissions.deny rules from config.yml to Claude Code's settings
 # - Only touches .permissions.deny; existing rules are kept (union)
 # - Backs up settings.json before changing it; no-op if all rules are present
@@ -360,7 +337,6 @@ if [ "$1" = "--claude" ]; then
   prepare
   install_claude_plugins
   plugins_status=$?
-  configure_claude_statusline
   configure_claude_permissions
   [ "$plugins_status" -ne 0 ] && exit 1
   echo ""
@@ -374,7 +350,6 @@ install_brew_packages
 install_custom_tools
 install_mise_tools
 install_claude_plugins || setup_failed=1
-configure_claude_statusline
 configure_claude_permissions
 install_global_npm_packages
 install_global_pip_packages
