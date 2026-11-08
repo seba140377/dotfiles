@@ -40,14 +40,12 @@ claude:
   # GitHub repos (owner/repo) that provide a Claude Code plugin marketplace
   marketplaces:
     - multica-ai/andrej-karpathy-skills
-    - obra/superpowers-marketplace
     - AgriciDaniel/claude-obsidian
     - mattpocock/skills
     - sflabio/skills
   # Plugins to install, as <plugin>@<marketplace-name>
   plugins:
     - andrej-karpathy-skills@karpathy-skills
-    - superpowers@superpowers-marketplace
     - claude-obsidian@agricidaniel-claude-obsidian
     - mattpocock-skills@mattpocock
     - sflabio-skills@sflabio

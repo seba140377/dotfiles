@@ -743,6 +743,17 @@ checksum_source = "mise-versions"
 url = "https://github.com/starship/starship/releases/download/v1.27.0/starship-aarch64-apple-darwin.tar.gz"
 url_api = "https://api.github.com/repos/starship/starship/releases/assets/650074353"
 
+[[tools.tmux]]
+version = "3.8"
+backend = "aqua:tmux/tmux-builds"
+specifiers = ["3.8"]
+
+[tools.tmux."platforms.macos-arm64"]
+checksum = "sha256:ec926bbf28ddf55d0dc7c9791d43e03e251ddab392d763f7fbb38d4b8408d051"
+checksum_source = "mise-versions"
+url = "https://github.com/tmux/tmux-builds/releases/download/v3.8/tmux-3.8-macos-arm64.tar.gz"
+url_api = "https://api.github.com/repos/tmux/tmux-builds/releases/assets/721688988"
+
 [[tools.usage]]
 version = "3.5.7"
 backend = "aqua:jdx/usage"
