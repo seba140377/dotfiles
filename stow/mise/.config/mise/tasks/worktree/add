@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+
+#MISE description="Create a git worktree at <repo>.worktrees/<branch> (VS Code layout), show it in the VS Code workspace and open it in herdr"
+#MISE tools={jq="1.8"}
+#USAGE arg "<branch>" help="Branch to check out; created from HEAD if it doesn't exist"
+#USAGE flag "-o --open" help="Also open the worktree in a new VS Code window"
+# raw: redacted env vars (redact=true in a project) pipe task stdio, so gum finds no terminal.
+#MISE raw=true
+
+set -euo pipefail
+
+# shellcheck source=lib/ui.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/ui.sh"
+# shellcheck source=lib/vscode-workspace.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/vscode-workspace.sh"
+
+# A global task starts outside the project; work in the directory mise was called from.
+cd "${MISE_ORIGINAL_CWD:-$PWD}"
+
+branch="$usage_branch"
+
+# Always anchor on the main worktree, even when run from inside another worktree.
+main_root=$(git worktree list --porcelain | sed -n '1s/^worktree //p')
+# Same layout as VS Code: sibling folder, slashes in the branch name become dashes.
+path="${main_root}.worktrees/${branch//\//-}"
+
+ui_header "worktree:add  $branch" "Creates the worktree $path."
+[[ ! -e $path ]] || ui_die "$path already exists."
+
+if git show-ref --verify --quiet "refs/heads/$branch"; then
+  git worktree add "$path" "$branch"
+else
+  git worktree add -b "$branch" "$path"
+fi
+
+# Keep files VS Code writes into a worktree (the --open task below, settings.json
+# from extensions) out of git, so worktree:finish sees a clean checkout.
+exclude="$(git rev-parse --git-common-dir)/info/exclude"
+for pattern in /.vscode/tasks.json /.vscode/settings.json; do
+  grep -qxF "$pattern" "$exclude" 2>/dev/null || echo "$pattern" >>"$exclude"
+done
+
+# Show <repo>.worktrees as a root folder in the VS Code workspace (Explorer).
+vscode_ws_add "$main_root"
+
+# Inside a herdr session, open the new worktree as its own herdr workspace:
+# tab named after the branch, split into a left and a right pane.
+if [[ ${HERDR_ENV:-} == 1 ]] && command -v herdr >/dev/null; then
+  opened=$(herdr worktree open --cwd "$main_root" --path "$path" --focus)
+  herdr tab rename "$(jq -r .result.tab.tab_id <<<"$opened")" "$branch" >/dev/null
+  herdr pane split "$(jq -r .result.root_pane.pane_id <<<"$opened")" \
+    --direction right --cwd "$path" --no-focus >/dev/null
+fi
+
+if [[ ${usage_open:-false} == true ]]; then
+  if command -v code >/dev/null; then
+    # A folderOpen task opens the integrated terminal right away, running herdr
+    # if it's installed, else a login shell.
+    # VS Code may inherit HERDR_* from the pane it was launched in, and herdr
+    # refuses to start nested while HERDR_ENV is set, so strip them.
+    if command -v herdr >/dev/null; then
+      cmd='"env"'
+      args='["-u", "HERDR_ENV", "-u", "HERDR_PANE_ID", "-u", "HERDR_TAB_ID", "-u", "HERDR_WORKSPACE_ID", "herdr"]'
+    else
+      cmd='"${env:SHELL}"' args='["-l"]'
+    fi
+    mkdir -p "$path/.vscode"
+    cat >"$path/.vscode/tasks.json" <<EOF
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "terminal",
+      "type": "process",
+      "command": $cmd,
+      "args": $args,
+      "options": { "cwd": "\${workspaceFolder}" },
+      "runOptions": { "runOn": "folderOpen" },
+      "presentation": { "reveal": "always", "focus": true, "panel": "dedicated" },
+      "problemMatcher": []
+    }
+  ]
+}
+EOF
+    code --new-window "$path"
+  else
+    ui_warn "VS Code CLI 'code' not found; skipping --open."
+  fi
+fi
+
+ui_ok "$path"

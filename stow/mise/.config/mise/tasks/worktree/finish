@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+
+#MISE description="Merge a worktree branch into main, then remove the worktree (via herdr if open), the branch and, after the last worktree, its VS Code workspace folder"
+#MISE tools={jq="1.8"}
+#USAGE arg "[branch]" help="Branch to finish; defaults to the branch of the current worktree"
+# raw: redacted env vars (redact=true in a project) pipe task stdio, so gum finds no terminal.
+#MISE raw=true
+
+set -euo pipefail
+
+# shellcheck source=lib/ui.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/ui.sh"
+# shellcheck source=lib/vscode-workspace.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/vscode-workspace.sh"
+
+# A global task starts outside the project; work in the directory mise was called from.
+cd "${MISE_ORIGINAL_CWD:-$PWD}"
+
+# Always anchor on the main worktree, even when run from inside another worktree.
+main_root=$(git worktree list --porcelain | sed -n '1s/^worktree //p')
+branch="${usage_branch:-}"
+
+if [[ -z $branch ]]; then
+  [[ $(git rev-parse --show-toplevel) != "$main_root" ]] ||
+    ui_die "Pass a branch, or run this from inside the worktree to finish."
+  branch=$(git branch --show-current)
+fi
+
+# Find the worktree checked out on this branch.
+path=$(git worktree list --porcelain | awk -v ref="branch refs/heads/$branch" '
+  /^worktree / { wt = substr($0, 10) }
+  $0 == ref    { print wt; exit }')
+
+[[ -n $path && $path != "$main_root" ]] || ui_die "No linked worktree found for branch $branch."
+ui_header "worktree:finish  $branch" "Merges $branch into main (--no-ff, no push), then removes" \
+  "the branch and the worktree $path."
+[[ -z $(git -C "$path" status --porcelain) ]] || ui_die "$path has uncommitted changes."
+[[ $(git -C "$main_root" branch --show-current) == main ]] || ui_die "$main_root is not on main."
+[[ -z $(git -C "$main_root" status --porcelain) ]] || ui_die "$main_root has uncommitted changes."
+
+if ! git -C "$main_root" merge --no-ff --no-edit "$branch"; then
+  git -C "$main_root" merge --abort
+  ui_die "Merge of $branch into main failed; nothing was removed."
+fi
+ui_ok "Merged $branch into main"
+
+# Look up the herdr workspace before removing anything.
+workspace=""
+if [[ ${HERDR_ENV:-} == 1 ]] && command -v herdr >/dev/null; then
+  workspace=$(herdr worktree list --cwd "$main_root" |
+    jq -r --arg p "$path" '.result.worktrees[] | select(.path == $p) | .open_workspace_id // empty')
+fi
+
+# Without a herdr workspace, remove the checkout with git. Delete the branch
+# before herdr closes the workspace, which may kill the shell running this task.
+if [[ -z $workspace ]]; then
+  git -C "$main_root" worktree remove "$path"
+  git -C "$main_root" branch -d "$branch"
+  ui_ok "Removed $branch and $path"
+  vscode_ws_remove "$main_root" "$path"
+else
+  # git won't delete a branch that is still checked out, so detach the worktree first.
+  git -C "$path" switch --detach --quiet
+  git -C "$main_root" branch -d "$branch"
+  # Before herdr, which may kill the shell running this task.
+  vscode_ws_remove "$main_root" "$path"
+  ui_ok "Removed $branch; removing $path via herdr"
+  herdr worktree remove --workspace "$workspace" >/dev/null
+fi

@@ -60,6 +60,10 @@ The tool list in `config.yml` (`mise:`) and `[tools]` in `stow/mise/.config/mise
 
 Task scripts in `stow/mise/.config/mise/tasks/` are stowed to `~/.config/mise/tasks/` and become available as `mise run <task>` in any project once mise is activated (`mise tasks` lists them).
 
+Global tasks start outside the project, so each one first changes to `$MISE_ORIGINAL_CWD` (the directory `mise run` was called from). mise only picks up executable files as tasks; sourced helpers are non-executable `.sh` files, e.g. `tasks/worktree/lib/`.
+
+- `worktree:add <branch> [--open]` / `worktree:finish [branch]` (`tasks/worktree/`): create a worktree at `<repo>.worktrees/<branch>` (`/` → `-`, VS Code's layout) and merge it back into `main` with `--no-ff` (no push), deleting branch and checkout. Inside a herdr session (`HERDR_ENV=1`) the worktree gets its own herdr workspace. `lib/vscode-workspace.sh` adds `<repo>.worktrees` as a root folder to the first `*.code-workspace` in `$VSCODE_WORKSPACES` (default `~/.config/vscode`, not stowed, not versioned) that has the repo or a folder above it as a root folder, and removes it after the last worktree; files are written with `jq --tab` and no final newline, as VS Code writes them. `lib/ui.sh` is a trimmed copy of the `ui_*` helpers of the sflabio umbrella repo's `.mise/common.sh`.
+
 ## Common Commands
 
 ### Full System Setup
